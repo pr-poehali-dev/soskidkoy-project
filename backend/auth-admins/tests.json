@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Get admins as owner",
+      "method": "GET",
+      "path": "/",
+      "headers": {"X-User-Role": "owner"},
+      "expectedStatus": 200,
+      "expectedBody": "string",
+      "bodyMatcher": "partial"
+    }
+  ]
+}

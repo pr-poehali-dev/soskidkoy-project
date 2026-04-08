@@ -1,24 +1,22 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Icon from "@/components/ui/icon";
+import func2url from "../../backend/func2url.json";
 
 type Mode = "login" | "register";
 
 interface Admin {
   id: number;
   phone: string;
-  name: string;
   role: "owner" | "admin";
   createdAt: string;
 }
 
-const OWNER_PHONE = "+7 (900) 000-00-00";
-const OWNER_PASSWORD = "Owner@2024!";
-
-const MOCK_ADMINS: Admin[] = [
-  { id: 1, phone: "+7 (900) 000-00-00", name: "Владелец", role: "owner", createdAt: "2024-01-01" },
-  { id: 2, phone: "+7 (916) 123-45-67", name: "Администратор", role: "admin", createdAt: "2024-03-15" },
-  { id: 3, phone: "+7 (926) 987-65-43", name: "Администратор", role: "admin", createdAt: "2024-06-20" },
-];
+interface AuthUser {
+  id: number;
+  phone: string;
+  role: "owner" | "admin";
+  createdAt: string;
+}
 
 function formatPhone(value: string): string {
   const digits = value.replace(/\D/g, "");
@@ -55,81 +53,94 @@ export default function Auth() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [admins, setAdmins] = useState<Admin[]>(MOCK_ADMINS);
-  const [registeredPhones, setRegisteredPhones] = useState<Set<string>>(
-    new Set(MOCK_ADMINS.map((a) => a.phone))
-  );
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [admins, setAdmins] = useState<Admin[]>([]);
 
   const strength = getPasswordStrength(password);
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const formatted = formatPhone(e.target.value);
-    setPhone(formatted);
+    setPhone(formatPhone(e.target.value));
     setError("");
   }
 
-  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setPassword(e.target.value);
-    setError("");
-  }
+  const loadAdmins = useCallback(async (role: string) => {
+    if (role !== "owner") return;
+    const res = await fetch(func2url["auth-admins"], {
+      headers: { "X-User-Role": "owner" },
+    });
+    const data = await res.json();
+    setAdmins(data.admins || []);
+  }, []);
 
-  function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (phone === OWNER_PHONE && password === OWNER_PASSWORD) {
-      setIsAuthenticated(true);
-    } else {
-      setError("Неверный телефон или пароль");
-    }
-  }
-
-  function handleRegister(e: React.FormEvent) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     const rawDigits = phone.replace(/\D/g, "");
-    if (rawDigits.length < 11) {
-      setError("Введите корректный номер телефона");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Пароль должен содержать минимум 8 символов");
-      return;
-    }
-    if (strength.score < 3) {
-      setError("Используйте более надёжный пароль");
-      return;
-    }
-    if (registeredPhones.has(phone)) {
-      setError("Этот номер уже зарегистрирован");
-      return;
-    }
-    const newAdmin: Admin = {
-      id: Date.now(),
-      phone,
-      name: "Администратор",
-      role: "admin",
-      createdAt: new Date().toISOString().split("T")[0],
-    };
-    setAdmins((prev) => [...prev, newAdmin]);
-    setRegisteredPhones((prev) => new Set([...prev, phone]));
-    setMode("login");
-    setPhone("");
-    setPassword("");
+    if (rawDigits.length < 11) { setError("Введите корректный номер телефона"); return; }
+    setLoading(true);
     setError("");
+    try {
+      const res = await fetch(func2url["auth-login"], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Ошибка входа"); return; }
+      setUser(data);
+      await loadAdmins(data.role);
+    } catch {
+      setError("Ошибка соединения с сервером");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    const rawDigits = phone.replace(/\D/g, "");
+    if (rawDigits.length < 11) { setError("Введите корректный номер телефона"); return; }
+    if (password.length < 8) { setError("Пароль должен содержать минимум 8 символов"); return; }
+    if (strength.score < 3) { setError("Используйте более надёжный пароль"); return; }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(func2url["auth-register"], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Ошибка регистрации"); return; }
+      setMode("login");
+      setPhone("");
+      setPassword("");
+    } catch {
+      setError("Ошибка соединения с сервером");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteAdmin(id: number) {
+    const res = await fetch(`${func2url["auth-admins"]}?id=${id}`, {
+      method: "DELETE",
+      headers: { "X-User-Role": "owner" },
+    });
+    if (res.ok) {
+      setAdmins((prev) => prev.filter((a) => a.id !== id));
+    }
   }
 
   function handleLogout() {
-    setIsAuthenticated(false);
+    setUser(null);
+    setAdmins([]);
     setPhone("");
     setPassword("");
   }
 
-  function deleteAdmin(id: number) {
-    if (id === 1) return;
-    setAdmins((prev) => prev.filter((a) => a.id !== id));
-  }
-
-  if (isAuthenticated) {
-    return <Dashboard admins={admins} onLogout={handleLogout} onDelete={deleteAdmin} />;
+  if (user) {
+    return <Dashboard user={user} admins={admins} onLogout={handleLogout} onDelete={handleDeleteAdmin} />;
   }
 
   return (
@@ -155,9 +166,7 @@ export default function Auth() {
         <div className="auth-glass rounded-2xl p-6 space-y-4">
           <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Номер телефона
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Номер телефона</label>
               <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2">
                   <Icon name="Phone" size={16} className="text-muted-foreground" />
@@ -174,9 +183,7 @@ export default function Auth() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-foreground mb-1.5">
-                Пароль
-              </label>
+              <label className="block text-sm font-medium text-foreground mb-1.5">Пароль</label>
               <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2">
                   <Icon name="Lock" size={16} className="text-muted-foreground" />
@@ -184,7 +191,7 @@ export default function Auth() {
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={handlePasswordChange}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   placeholder="Введите пароль"
                   className="w-full pl-9 pr-11 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
@@ -205,32 +212,23 @@ export default function Auth() {
                       <div
                         key={i}
                         className="h-1 flex-1 rounded-full strength-bar"
-                        style={{
-                          backgroundColor:
-                            i <= strength.score ? strength.color : "hsl(240 5% 20%)",
-                        }}
+                        style={{ backgroundColor: i <= strength.score ? strength.color : "hsl(240 5% 20%)" }}
                       />
                     ))}
                   </div>
-                  <p className="text-xs" style={{ color: strength.color }}>
-                    {strength.label} пароль
-                  </p>
+                  <p className="text-xs" style={{ color: strength.color }}>{strength.label} пароль</p>
                   <ul className="text-xs text-muted-foreground space-y-0.5 mt-1">
                     <li className={`flex items-center gap-1 ${password.length >= 8 ? "text-green-500" : ""}`}>
-                      <Icon name={password.length >= 8 ? "Check" : "X"} size={10} />
-                      Минимум 8 символов
+                      <Icon name={password.length >= 8 ? "Check" : "X"} size={10} /> Минимум 8 символов
                     </li>
                     <li className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? "text-green-500" : ""}`}>
-                      <Icon name={/[A-Z]/.test(password) ? "Check" : "X"} size={10} />
-                      Заглавная буква (A-Z)
+                      <Icon name={/[A-Z]/.test(password) ? "Check" : "X"} size={10} /> Заглавная буква (A-Z)
                     </li>
                     <li className={`flex items-center gap-1 ${/[0-9]/.test(password) ? "text-green-500" : ""}`}>
-                      <Icon name={/[0-9]/.test(password) ? "Check" : "X"} size={10} />
-                      Цифра (0-9)
+                      <Icon name={/[0-9]/.test(password) ? "Check" : "X"} size={10} /> Цифра (0-9)
                     </li>
                     <li className={`flex items-center gap-1 ${/[^A-Za-z0-9]/.test(password) ? "text-green-500" : ""}`}>
-                      <Icon name={/[^A-Za-z0-9]/.test(password) ? "Check" : "X"} size={10} />
-                      Спецсимвол (!@#$...)
+                      <Icon name={/[^A-Za-z0-9]/.test(password) ? "Check" : "X"} size={10} /> Спецсимвол (!@#$...)
                     </li>
                   </ul>
                 </div>
@@ -246,8 +244,10 @@ export default function Auth() {
 
             <button
               type="submit"
-              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 mt-2"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
+              {loading && <Icon name="Loader2" size={16} className="animate-spin" />}
               {mode === "login" ? "Войти" : "Зарегистрироваться"}
             </button>
           </form>
@@ -257,12 +257,7 @@ export default function Auth() {
               {mode === "login" ? "Нет аккаунта? " : "Уже есть аккаунт? "}
             </span>
             <button
-              onClick={() => {
-                setMode(mode === "login" ? "register" : "login");
-                setError("");
-                setPhone("");
-                setPassword("");
-              }}
+              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setPhone(""); setPassword(""); }}
               className="text-sm text-primary font-medium hover:underline transition-all"
             >
               {mode === "login" ? "Регистрация" : "Войти"}
@@ -271,9 +266,7 @@ export default function Auth() {
         </div>
 
         {mode === "login" && (
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            Только для владельца системы
-          </p>
+          <p className="text-center text-xs text-muted-foreground mt-4">Только для владельца системы</p>
         )}
       </div>
     </div>
@@ -281,10 +274,12 @@ export default function Auth() {
 }
 
 function Dashboard({
+  user,
   admins,
   onLogout,
   onDelete,
 }: {
+  user: AuthUser;
   admins: Admin[];
   onLogout: () => void;
   onDelete: (id: number) => void;
@@ -303,7 +298,7 @@ function Dashboard({
             </div>
             <div>
               <h1 className="font-bold text-foreground text-sm leading-none">Панель владельца</h1>
-              <p className="text-muted-foreground text-xs mt-0.5">Управление администраторами</p>
+              <p className="text-muted-foreground text-xs mt-0.5">{user.phone}</p>
             </div>
           </div>
           <button
@@ -339,10 +334,10 @@ function Dashboard({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center
                     ${admin.role === "owner"
-                      ? "bg-primary/15 border border-primary/30 text-primary"
-                      : "bg-secondary border border-border text-foreground"
+                      ? "bg-primary/15 border border-primary/30"
+                      : "bg-secondary border border-border"
                     }`}
                 >
                   {admin.role === "owner" ? (
@@ -360,9 +355,7 @@ function Dashboard({
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Зарегистрирован: {admin.createdAt}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Зарегистрирован: {admin.createdAt}</p>
                 </div>
               </div>
 
@@ -378,7 +371,7 @@ function Dashboard({
           ))}
         </div>
 
-        {admins.length === 1 && (
+        {admins.length <= 1 && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Icon name="UserPlus" size={32} className="mx-auto mb-2 opacity-30" />
             <p>Зарегистрируйте первого администратора</p>

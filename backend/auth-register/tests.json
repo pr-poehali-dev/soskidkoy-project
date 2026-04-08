@@ -1,0 +1,13 @@
+{
+  "tests": [
+    {
+      "name": "Register new admin",
+      "method": "POST",
+      "path": "/",
+      "body": {"phone": "+7 (999) 111-11-11", "password": "Test@1234!"},
+      "expectedStatus": 201,
+      "expectedBody": "string",
+      "bodyMatcher": "partial"
+    }
+  ]
+}
