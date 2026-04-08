@@ -1,0 +1,390 @@
+import { useState } from "react";
+import Icon from "@/components/ui/icon";
+
+type Mode = "login" | "register";
+
+interface Admin {
+  id: number;
+  phone: string;
+  name: string;
+  role: "owner" | "admin";
+  createdAt: string;
+}
+
+const OWNER_PHONE = "+7 (900) 000-00-00";
+const OWNER_PASSWORD = "Owner@2024!";
+
+const MOCK_ADMINS: Admin[] = [
+  { id: 1, phone: "+7 (900) 000-00-00", name: "Владелец", role: "owner", createdAt: "2024-01-01" },
+  { id: 2, phone: "+7 (916) 123-45-67", name: "Администратор", role: "admin", createdAt: "2024-03-15" },
+  { id: 3, phone: "+7 (926) 987-65-43", name: "Администратор", role: "admin", createdAt: "2024-06-20" },
+];
+
+function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  let d = digits;
+  if (d.startsWith("8")) d = "7" + d.slice(1);
+  if (!d.startsWith("7")) d = "7" + d;
+  d = d.slice(0, 11);
+
+  let result = "+7";
+  if (d.length > 1) result += " (" + d.slice(1, 4);
+  if (d.length >= 4) result += ") " + d.slice(4, 7);
+  if (d.length >= 7) result += "-" + d.slice(7, 9);
+  if (d.length >= 9) result += "-" + d.slice(9, 11);
+  return result;
+}
+
+function getPasswordStrength(password: string): { score: number; label: string; color: string } {
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+
+  if (score <= 1) return { score, label: "Слабый", color: "#ef4444" };
+  if (score <= 2) return { score, label: "Средний", color: "#f59e0b" };
+  if (score <= 3) return { score, label: "Хороший", color: "#3b82f6" };
+  return { score, label: "Надёжный", color: "#22c55e" };
+}
+
+export default function Auth() {
+  const [mode, setMode] = useState<Mode>("login");
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [admins, setAdmins] = useState<Admin[]>(MOCK_ADMINS);
+  const [registeredPhones, setRegisteredPhones] = useState<Set<string>>(
+    new Set(MOCK_ADMINS.map((a) => a.phone))
+  );
+
+  const strength = getPasswordStrength(password);
+
+  function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const formatted = formatPhone(e.target.value);
+    setPhone(formatted);
+    setError("");
+  }
+
+  function handlePasswordChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setPassword(e.target.value);
+    setError("");
+  }
+
+  function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (phone === OWNER_PHONE && password === OWNER_PASSWORD) {
+      setIsAuthenticated(true);
+    } else {
+      setError("Неверный телефон или пароль");
+    }
+  }
+
+  function handleRegister(e: React.FormEvent) {
+    e.preventDefault();
+    const rawDigits = phone.replace(/\D/g, "");
+    if (rawDigits.length < 11) {
+      setError("Введите корректный номер телефона");
+      return;
+    }
+    if (password.length < 8) {
+      setError("Пароль должен содержать минимум 8 символов");
+      return;
+    }
+    if (strength.score < 3) {
+      setError("Используйте более надёжный пароль");
+      return;
+    }
+    if (registeredPhones.has(phone)) {
+      setError("Этот номер уже зарегистрирован");
+      return;
+    }
+    const newAdmin: Admin = {
+      id: Date.now(),
+      phone,
+      name: "Администратор",
+      role: "admin",
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    setAdmins((prev) => [...prev, newAdmin]);
+    setRegisteredPhones((prev) => new Set([...prev, phone]));
+    setMode("login");
+    setPhone("");
+    setPassword("");
+    setError("");
+  }
+
+  function handleLogout() {
+    setIsAuthenticated(false);
+    setPhone("");
+    setPassword("");
+  }
+
+  function deleteAdmin(id: number) {
+    if (id === 1) return;
+    setAdmins((prev) => prev.filter((a) => a.id !== id));
+  }
+
+  if (isAuthenticated) {
+    return <Dashboard admins={admins} onLogout={handleLogout} onDelete={deleteAdmin} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 animate-fade-in">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
+        <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/4 blur-[100px]" />
+      </div>
+
+      <div className="w-full max-w-[400px] animate-slide-up relative z-10">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 mb-4">
+            <Icon name="Shield" size={26} className="text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            {mode === "login" ? "Вход в систему" : "Регистрация"}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {mode === "login" ? "Введите данные для доступа" : "Создайте аккаунт администратора"}
+          </p>
+        </div>
+
+        <div className="auth-glass rounded-2xl p-6 space-y-4">
+          <form onSubmit={mode === "login" ? handleLogin : handleRegister} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Номер телефона
+              </label>
+              <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <Icon name="Phone" size={16} className="text-muted-foreground" />
+                </span>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  placeholder="+7 (___) ___-__-__"
+                  className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                  autoComplete="tel"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-1.5">
+                Пароль
+              </label>
+              <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <Icon name="Lock" size={16} className="text-muted-foreground" />
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={handlePasswordChange}
+                  placeholder="Введите пароль"
+                  className="w-full pl-9 pr-11 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                  autoComplete={mode === "login" ? "current-password" : "new-password"}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Icon name={showPassword ? "EyeOff" : "Eye"} size={16} />
+                </button>
+              </div>
+
+              {mode === "register" && password.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className="h-1 flex-1 rounded-full strength-bar"
+                        style={{
+                          backgroundColor:
+                            i <= strength.score ? strength.color : "hsl(240 5% 20%)",
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs" style={{ color: strength.color }}>
+                    {strength.label} пароль
+                  </p>
+                  <ul className="text-xs text-muted-foreground space-y-0.5 mt-1">
+                    <li className={`flex items-center gap-1 ${password.length >= 8 ? "text-green-500" : ""}`}>
+                      <Icon name={password.length >= 8 ? "Check" : "X"} size={10} />
+                      Минимум 8 символов
+                    </li>
+                    <li className={`flex items-center gap-1 ${/[A-Z]/.test(password) ? "text-green-500" : ""}`}>
+                      <Icon name={/[A-Z]/.test(password) ? "Check" : "X"} size={10} />
+                      Заглавная буква (A-Z)
+                    </li>
+                    <li className={`flex items-center gap-1 ${/[0-9]/.test(password) ? "text-green-500" : ""}`}>
+                      <Icon name={/[0-9]/.test(password) ? "Check" : "X"} size={10} />
+                      Цифра (0-9)
+                    </li>
+                    <li className={`flex items-center gap-1 ${/[^A-Za-z0-9]/.test(password) ? "text-green-500" : ""}`}>
+                      <Icon name={/[^A-Za-z0-9]/.test(password) ? "Check" : "X"} size={10} />
+                      Спецсимвол (!@#$...)
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {error && (
+              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-3 py-2.5 border border-destructive/20">
+                <Icon name="AlertCircle" size={14} />
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 mt-2"
+            >
+              {mode === "login" ? "Войти" : "Зарегистрироваться"}
+            </button>
+          </form>
+
+          <div className="pt-2 text-center">
+            <span className="text-sm text-muted-foreground">
+              {mode === "login" ? "Нет аккаунта? " : "Уже есть аккаунт? "}
+            </span>
+            <button
+              onClick={() => {
+                setMode(mode === "login" ? "register" : "login");
+                setError("");
+                setPhone("");
+                setPassword("");
+              }}
+              className="text-sm text-primary font-medium hover:underline transition-all"
+            >
+              {mode === "login" ? "Регистрация" : "Войти"}
+            </button>
+          </div>
+        </div>
+
+        {mode === "login" && (
+          <p className="text-center text-xs text-muted-foreground mt-4">
+            Только для владельца системы
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Dashboard({
+  admins,
+  onLogout,
+  onDelete,
+}: {
+  admins: Admin[];
+  onLogout: () => void;
+  onDelete: (id: number) => void;
+}) {
+  return (
+    <div className="min-h-screen bg-background animate-fade-in">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-primary/4 blur-[100px]" />
+      </div>
+
+      <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center">
+              <Icon name="Shield" size={18} className="text-primary" />
+            </div>
+            <div>
+              <h1 className="font-bold text-foreground text-sm leading-none">Панель владельца</h1>
+              <p className="text-muted-foreground text-xs mt-0.5">Управление администраторами</p>
+            </div>
+          </div>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary"
+          >
+            <Icon name="LogOut" size={14} />
+            Выйти
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-6 relative z-10">
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <h2 className="text-lg font-bold text-foreground">Администраторы</h2>
+            <p className="text-muted-foreground text-sm">
+              Всего: {admins.length} • Активных: {admins.filter((a) => a.role === "admin").length}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
+            <Icon name="Users" size={14} className="text-primary" />
+            <span className="text-primary font-semibold text-sm">{admins.length}</span>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {admins.map((admin, index) => (
+            <div
+              key={admin.id}
+              className="auth-glass rounded-2xl p-4 flex items-center justify-between animate-slide-up"
+              style={{ animationDelay: `${index * 60}ms`, animationFillMode: "backwards" }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold
+                    ${admin.role === "owner"
+                      ? "bg-primary/15 border border-primary/30 text-primary"
+                      : "bg-secondary border border-border text-foreground"
+                    }`}
+                >
+                  {admin.role === "owner" ? (
+                    <Icon name="Crown" size={16} className="text-primary" />
+                  ) : (
+                    <Icon name="UserCircle" size={16} className="text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground text-sm">{admin.phone}</p>
+                    {admin.role === "owner" && (
+                      <span className="text-[10px] bg-primary/15 text-primary border border-primary/20 rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide">
+                        Владелец
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Зарегистрирован: {admin.createdAt}
+                  </p>
+                </div>
+              </div>
+
+              {admin.role !== "owner" && (
+                <button
+                  onClick={() => onDelete(admin.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                >
+                  <Icon name="Trash2" size={14} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {admins.length === 1 && (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            <Icon name="UserPlus" size={32} className="mx-auto mb-2 opacity-30" />
+            <p>Зарегистрируйте первого администратора</p>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
