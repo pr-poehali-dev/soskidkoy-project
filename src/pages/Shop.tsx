@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import func2url from "../../backend/func2url.json";
 import { normalizeText } from "@/lib/normalize";
+import ShopProductDetails from "@/components/ShopProductDetails";
 
 type Mode = "login" | "register";
 type SortField = "name" | "base_price" | "date";
@@ -80,6 +81,7 @@ export default function Shop() {
   const [items, setItems] = useState<ShopItem[]>([]);
   const [catalogLoading, setCatalogLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
   const [sortField, setSortField] = useState<SortField>(() => {
     const saved = localStorage.getItem("shop_sort_field");
     return (saved === "name" || saved === "base_price" || saved === "date") ? saved : "date";
@@ -255,6 +257,11 @@ export default function Shop() {
     return sortDir === "asc" ? cmp : -cmp;
   });
 
+  // --- Product details view ---
+  if (session && selectedProductId !== null) {
+    return <ShopProductDetails productId={selectedProductId} onBack={() => setSelectedProductId(null)} />;
+  }
+
   // --- Catalog view ---
   if (session) {
     return (
@@ -354,8 +361,10 @@ export default function Shop() {
                   {sortedItems.map((item) => {
                     const hasRange = item.min_retail !== item.max_retail;
                     return (
-                      <div
+                      <button
+                        type="button"
                         key={item.id}
+                        onClick={() => setSelectedProductId(item.id)}
                         className="auth-glass rounded-2xl overflow-hidden hover:border-primary/30 transition-all group text-left"
                       >
                         <div className="aspect-square bg-secondary/50 relative overflow-hidden">
@@ -396,7 +405,7 @@ export default function Shop() {
                             </p>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

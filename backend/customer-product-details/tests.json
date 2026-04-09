@@ -1,0 +1,8 @@
+{
+  "tests": [
+    {"name": "OPTIONS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "GET without id", "method": "GET", "path": "/", "expectedStatus": 400},
+    {"name": "GET invalid id", "method": "GET", "path": "/?id=abc", "expectedStatus": 400},
+    {"name": "GET nonexistent", "method": "GET", "path": "/?id=999999", "expectedStatus": 404}
+  ]
+}
