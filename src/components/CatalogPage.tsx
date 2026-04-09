@@ -32,8 +32,22 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [sortField, setSortField] = useState<SortField>("date");
-  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+  const [sortField, setSortField] = useState<SortField>(() => {
+    const saved = localStorage.getItem("catalog_sort_field");
+    return (saved === "name" || saved === "base_price" || saved === "date") ? saved : "date";
+  });
+  const [sortDir, setSortDir] = useState<SortDirection>(() => {
+    const saved = localStorage.getItem("catalog_sort_dir");
+    return saved === "asc" ? "asc" : "desc";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("catalog_sort_field", sortField);
+  }, [sortField]);
+
+  useEffect(() => {
+    localStorage.setItem("catalog_sort_dir", sortDir);
+  }, [sortDir]);
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
