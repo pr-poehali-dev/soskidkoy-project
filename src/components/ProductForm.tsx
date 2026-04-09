@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 import PhotoPicker from "@/components/PhotoPicker";
 import func2url from "../../backend/func2url.json";
+import NormalizeDialog from "@/components/NormalizeDialog";
+import { findMixedWords, normalizeText } from "@/lib/normalize";
 
 interface NomenclatureResult {
   id: number;
@@ -40,6 +42,7 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [normalizeFields, setNormalizeFields] = useState<{ label: string; original: string; normalized: string; changes: { original: string; normalized: string }[] }[] | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -140,16 +143,27 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
     return data.url;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
+  function checkNormalize() {
+    if (nomLocked) return true;
+    const nameChanges = findMixedWords(name.trim());
+    const articleChanges = findMixedWords(article.trim());
+    if (nameChanges.length === 0 && articleChanges.length === 0) return true;
+    const fields = [];
+    if (nameChanges.length > 0) {
+      fields.push({ label: "Название", original: name.trim(), normalized: normalizeText(name.trim()), changes: nameChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+    }
+    if (articleChanges.length > 0) {
+      fields.push({ label: "Артикул", original: article.trim(), normalized: normalizeText(article.trim()), changes: articleChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+    }
+    setNormalizeFields(fields);
+    return false;
+  }
 
-    if (!name.trim()) { setError("Введите название"); return; }
-    if (!condition) { setError("Выберите характеристику"); return; }
-    if (!retailPrice) { setError("Введите розничную цену"); return; }
-
+  async function doSubmit(nameVal: string, articleVal: string) {
     setSaving(true);
     try {
+      const n = nameVal;
+      const a = articleVal;
       let imageUrl = "";
       if (imageBase64 && !imageBase64.startsWith("http")) {
         imageUrl = await uploadImage(imageBase64);
@@ -165,8 +179,8 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
       }
 
       const payload: Record<string, unknown> = {
-        name: name.trim(),
-        article: article.trim(),
+        name: n,
+        article: a,
         description: description.trim(),
         image_url: imageUrl,
         base_price: parseFloat(basePrice) || 0,
@@ -201,6 +215,17 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
     }
   }
 
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!name.trim()) { setError("Введите название"); return; }
+    if (!condition) { setError("Выберите характеристику"); return; }
+    if (!retailPrice) { setError("Введите розничную цену"); return; }
+    if (checkNormalize()) {
+      doSubmit(name.trim(), article.trim());
+    }
+  }
+
   const conditions = [
     { value: "новый", label: "Новый" },
     { value: "как новый", label: "Как новый" },
@@ -211,6 +236,7 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
   ];
 
   return (
+    <>
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-lg font-bold text-foreground">Добавление товара</h2>
@@ -402,5 +428,24 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
         {saving ? "Сохранение..." : "Создать карточку"}
       </button>
     </form>
+    {normalizeFields && (
+      <NormalizeDialog
+        fields={normalizeFields}
+        onApply={(normalized) => {
+          const n = normalized["Название"] || name.trim();
+          const a = normalized["Артикул"] || article.trim();
+          setName(n);
+          setArticle(a);
+          setNormalizeFields(null);
+          doSubmit(n, a);
+        }}
+        onKeepOriginal={() => {
+          setNormalizeFields(null);
+          doSubmit(name.trim(), article.trim());
+        }}
+        onCancel={() => setNormalizeFields(null)}
+      />
+    )}
+    </>
   );
 }

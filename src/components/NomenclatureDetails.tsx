@@ -4,6 +4,7 @@ import func2url from "../../backend/func2url.json";
 import ProductActionDialog from "@/components/ProductActionDialog";
 import MovementHistory from "@/components/MovementHistory";
 import ProductForm from "@/components/ProductForm";
+import NomenclatureEditForm from "@/components/NomenclatureEditForm";
 
 interface Nomenclature {
   id: number;
@@ -38,6 +39,7 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
   const [actionCondition, setActionCondition] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -108,6 +110,20 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
     );
   }
 
+  if (showEditForm && nomenclature) {
+    return (
+      <div className="min-h-screen bg-background animate-fade-in">
+        <div className="max-w-2xl mx-auto px-4 py-6">
+          <NomenclatureEditForm
+            data={nomenclature}
+            onSuccess={() => { setShowEditForm(false); load(); }}
+            onCancel={() => setShowEditForm(false)}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background animate-fade-in">
       <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
@@ -118,6 +134,14 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
             </button>
             <h1 className="font-bold text-foreground">Карточка номенклатуры</h1>
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowEditForm(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm font-medium hover:bg-secondary/70 transition-all"
+            >
+              <Icon name="Pencil" size={16} />
+              <span className="hidden sm:inline">Редактировать</span>
+            </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all"
@@ -125,6 +149,7 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
             <Icon name="Plus" size={16} />
             <span className="hidden sm:inline">Добавить товар</span>
           </button>
+          </div>
         </div>
       </header>
 

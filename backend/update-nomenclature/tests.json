@@ -1,0 +1,33 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST missing items",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST empty items",
+      "method": "POST",
+      "path": "/",
+      "body": {"items": []},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST update nonexistent",
+      "method": "POST",
+      "path": "/",
+      "body": {"items": [{"id": 999999, "name": "test"}]},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true, "updated": 0},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

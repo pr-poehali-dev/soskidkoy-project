@@ -1,0 +1,1 @@
+ALTER TABLE nomenclature ADD COLUMN IF NOT EXISTS is_normalized BOOLEAN NOT NULL DEFAULT false;

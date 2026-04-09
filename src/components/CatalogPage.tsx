@@ -3,6 +3,8 @@ import Icon from "@/components/ui/icon";
 import ProductForm from "@/components/ProductForm";
 import NomenclatureDetails from "@/components/NomenclatureDetails";
 import func2url from "../../backend/func2url.json";
+import { normalizeText, findMixedWords } from "@/lib/normalize";
+import NormalizeDialog from "@/components/NormalizeDialog";
 
 interface NomenclatureItem {
   id: number;
@@ -18,6 +20,7 @@ interface NomenclatureItem {
   max_retail: number;
   created_at: string;
   latest_product_date: string;
+  is_normalized: boolean;
 }
 
 type SortField = "name" | "base_price" | "date";
@@ -33,6 +36,9 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [bulkNormalize, setBulkNormalize] = useState<{ id: number; label: string; fields: { label: string; original: string; normalized: string; changes: { original: string; normalized: string }[] }[] }[] | null>(null);
+  const [bulkIdx, setBulkIdx] = useState(0);
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [sortField, setSortField] = useState<SortField>(() => {
     const saved = localStorage.getItem("catalog_sort_field");
     return (saved === "name" || saved === "base_price" || saved === "date") ? saved : "date";
@@ -59,13 +65,75 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
     }
   }
 
+  function runBulkCheck() {
+    const problems = items
+      .filter((n) => !n.is_normalized)
+      .map((n) => {
+        const nameChanges = findMixedWords(n.name);
+        const articleChanges = findMixedWords(n.article || "");
+        if (nameChanges.length === 0 && articleChanges.length === 0) return null;
+        const fields = [];
+        if (nameChanges.length > 0) {
+          fields.push({ label: "Название", original: n.name, normalized: normalizeText(n.name), changes: nameChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+        }
+        if (articleChanges.length > 0) {
+          fields.push({ label: "Артикул", original: n.article, normalized: normalizeText(n.article), changes: articleChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+        }
+        return { id: n.id, label: n.name, fields };
+      })
+      .filter(Boolean) as NonNullable<typeof bulkNormalize>[number][];
+
+    if (problems.length === 0) {
+      alert("Всё чисто! Проблемных записей не найдено.");
+      return;
+    }
+    setBulkNormalize(problems);
+    setBulkIdx(0);
+  }
+
+  async function bulkApply(nomId: number, normalized: Record<string, string>) {
+    setBulkSaving(true);
+    const payload: Record<string, unknown> = { id: nomId, is_normalized: true };
+    if (normalized["Название"]) payload.name = normalized["Название"];
+    if (normalized["Артикул"]) payload.article = normalized["Артикул"];
+    await fetch(func2url["update-nomenclature"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [payload] }),
+    });
+    setBulkSaving(false);
+    nextBulk();
+  }
+
+  async function bulkKeep(nomId: number) {
+    setBulkSaving(true);
+    await fetch(func2url["update-nomenclature"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ items: [{ id: nomId, is_normalized: true }] }),
+    });
+    setBulkSaving(false);
+    nextBulk();
+  }
+
+  function nextBulk() {
+    if (!bulkNormalize) return;
+    if (bulkIdx >= bulkNormalize.length - 1) {
+      setBulkNormalize(null);
+      loadItems();
+      return;
+    }
+    setBulkIdx((i) => i + 1);
+  }
+
   const query = searchQuery.trim().toLowerCase();
+  const normalizedQuery = normalizeText(query);
   const filteredItems = query
-    ? items.filter(
-        (n) =>
-          n.name.toLowerCase().includes(query) ||
-          (n.article || "").toLowerCase().includes(query)
-      )
+    ? items.filter((n) => {
+        const normName = normalizeText(n.name.toLowerCase());
+        const normArticle = normalizeText((n.article || "").toLowerCase());
+        return normName.includes(normalizedQuery) || normArticle.includes(normalizedQuery);
+      })
     : items;
 
   const sortedItems = [...filteredItems].sort((a, b) => {
@@ -211,6 +279,15 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={runBulkCheck}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border bg-secondary/50 border-border text-muted-foreground hover:text-foreground text-xs font-medium transition-all flex-shrink-0"
+                title="Проверить символы"
+              >
+                <Icon name="SpellCheck" size={13} />
+                <span className="hidden sm:inline">Проверить символы</span>
+              </button>
             </div>
             {sortedItems.length === 0 ? (
               <div className="text-center py-16">
@@ -267,6 +344,20 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
           </>
         )}
       </main>
+
+      {bulkNormalize && bulkNormalize[bulkIdx] && !bulkSaving && (
+        <>
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold shadow-lg">
+            Запись {bulkIdx + 1} из {bulkNormalize.length}: {bulkNormalize[bulkIdx].label}
+          </div>
+          <NormalizeDialog
+            fields={bulkNormalize[bulkIdx].fields}
+            onApply={(normalized) => bulkApply(bulkNormalize[bulkIdx].id, normalized)}
+            onKeepOriginal={() => bulkKeep(bulkNormalize[bulkIdx].id)}
+            onCancel={() => { setBulkNormalize(null); loadItems(); }}
+          />
+        </>
+      )}
     </div>
   );
 }
