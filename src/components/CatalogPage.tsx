@@ -110,15 +110,15 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             {products.map((p) => (
               <div key={p.id} className="auth-glass rounded-2xl overflow-hidden hover:border-primary/30 transition-all group">
-                <div className="aspect-square bg-secondary/50 relative overflow-hidden">
+                <div className="aspect-[4/3] bg-secondary/50 relative overflow-hidden">
                   {(p.condition_image_url || p.image_url) ? (
                     <img
                       src={p.condition_image_url || p.image_url}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
