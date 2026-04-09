@@ -16,7 +16,8 @@ def handler(event, context):
                n.base_price, n.wholesale_price, n.watts, n.created_at,
                COUNT(p.id) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS products_count,
                MIN(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS min_retail,
-               MAX(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS max_retail
+               MAX(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS max_retail,
+               MAX(p.created_at) FILTER (WHERE p.condition NOT IN ('под ремонт', 'утиль')) AS latest_product_date
         FROM nomenclature n
         LEFT JOIN products p ON p.nomenclature_id = n.id
         GROUP BY n.id
@@ -41,7 +42,8 @@ def handler(event, context):
             'created_at': str(r[8]),
             'products_count': int(r[9] or 0),
             'min_retail': float(r[10] or 0),
-            'max_retail': float(r[11] or 0)
+            'max_retail': float(r[11] or 0),
+            'latest_product_date': str(r[12]) if r[12] else ''
         })
 
     return {

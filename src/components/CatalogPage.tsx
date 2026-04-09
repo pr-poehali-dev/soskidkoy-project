@@ -17,7 +17,11 @@ interface NomenclatureItem {
   min_retail: number;
   max_retail: number;
   created_at: string;
+  latest_product_date: string;
 }
+
+type SortField = "name" | "base_price" | "date";
+type SortDirection = "asc" | "desc";
 
 interface CatalogPageProps {
   onBack: () => void;
@@ -28,6 +32,31 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [sortField, setSortField] = useState<SortField>("date");
+  const [sortDir, setSortDir] = useState<SortDirection>("desc");
+
+  function toggleSort(field: SortField) {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir(field === "name" ? "asc" : "desc");
+    }
+  }
+
+  const sortedItems = [...items].sort((a, b) => {
+    let cmp = 0;
+    if (sortField === "name") {
+      cmp = a.name.localeCompare(b.name, "ru");
+    } else if (sortField === "base_price") {
+      cmp = a.base_price - b.base_price;
+    } else {
+      const aDate = a.latest_product_date || a.created_at;
+      const bDate = b.latest_product_date || b.created_at;
+      cmp = new Date(aDate).getTime() - new Date(bDate).getTime();
+    }
+    return sortDir === "asc" ? cmp : -cmp;
+  });
 
   async function loadItems() {
     setLoading(true);
@@ -109,8 +138,37 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {items.map((n) => (
+          <>
+            <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+              <span className="text-xs text-muted-foreground flex-shrink-0">Сортировка:</span>
+              {([
+                { field: "name" as SortField, label: "По алфавиту", icon: "ArrowDownAZ" },
+                { field: "base_price" as SortField, label: "По цене", icon: "Banknote" },
+                { field: "date" as SortField, label: "По дате", icon: "Calendar" },
+              ]).map((s) => {
+                const active = sortField === s.field;
+                return (
+                  <button
+                    key={s.field}
+                    type="button"
+                    onClick={() => toggleSort(s.field)}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all flex-shrink-0 ${
+                      active
+                        ? "bg-primary/15 border-primary/40 text-primary"
+                        : "bg-secondary/50 border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Icon name={s.icon} size={13} />
+                    {s.label}
+                    {active && (
+                      <Icon name={sortDir === "asc" ? "ArrowUp" : "ArrowDown"} size={12} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortedItems.map((n) => (
               <button
                 key={n.id}
                 type="button"
@@ -151,7 +209,8 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
                 </div>
               </button>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </main>
     </div>
