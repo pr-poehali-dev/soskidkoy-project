@@ -3,7 +3,7 @@ import os
 import psycopg2
 
 
-ALLOWED_FIELDS = {'name', 'article', 'description', 'image_url', 'base_price', 'wholesale_price', 'watts', 'is_normalized'}
+ALLOWED_FIELDS = {'name', 'article', 'description', 'image_url', 'base_price', 'wholesale_price', 'watts', 'is_normalized', 'normalization_status'}
 
 
 def _escape(value):

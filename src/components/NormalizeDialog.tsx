@@ -13,6 +13,7 @@ interface NormalizeDialogProps {
   onApply: (normalizedTexts: Record<string, string>) => void;
   onKeepOriginal: () => void;
   onCancel: () => void;
+  reconsiderMode?: boolean;
 }
 
 function HighlightedWord({
@@ -52,6 +53,7 @@ export default function NormalizeDialog({
   onApply,
   onKeepOriginal,
   onCancel,
+  reconsiderMode,
 }: NormalizeDialogProps) {
   const fieldsWithChanges = fields.filter((f) => f.changes.length > 0);
 
@@ -80,10 +82,12 @@ export default function NormalizeDialog({
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">
-                Обнаружены смешанные символы
+                {reconsiderMode ? "Рассмотреть снова?" : "Обнаружены смешанные символы"}
               </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                В тексте найдены слова, где перепутаны кириллица и латиница
+                {reconsiderMode
+                  ? "Ранее вы решили оставить эти символы как есть. Хотите пересмотреть?"
+                  : "В тексте найдены слова, где перепутаны кириллица и латиница"}
               </p>
             </div>
           </div>

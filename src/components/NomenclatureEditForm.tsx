@@ -14,6 +14,7 @@ interface NomenclatureData {
   base_price: number;
   wholesale_price: number;
   watts: number;
+  normalization_status?: string;
 }
 
 interface NomenclatureEditFormProps {
@@ -33,6 +34,8 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [normalizeFields, setNormalizeFields] = useState<{ label: string; original: string; normalized: string; changes: { original: string; normalized: string }[] }[] | null>(null);
+  const [reconsiderMode, setReconsiderMode] = useState(false);
+  const wasKeptOriginal = data.normalization_status === "kept_original";
 
   async function uploadImage(base64: string): Promise<string> {
     if (base64.startsWith("http")) return base64;
@@ -50,7 +53,7 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
     const articleChanges = findMixedWords(articleVal);
 
     if (nameChanges.length === 0 && articleChanges.length === 0) {
-      doSave(nameVal, articleVal, true);
+      doSave(nameVal, articleVal, "normalized");
       return;
     }
 
@@ -71,10 +74,29 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
         changes: articleChanges.map((c) => ({ original: c.original, normalized: c.normalized })),
       });
     }
+    setReconsiderMode(false);
     setNormalizeFields(fields);
   }
 
-  async function doSave(nameVal: string, articleVal: string, isNormalized: boolean) {
+  function openReconsider() {
+    const nameChanges = findMixedWords(name.trim());
+    const articleChanges = findMixedWords(article.trim());
+    if (nameChanges.length === 0 && articleChanges.length === 0) {
+      alert("Смешанных символов больше нет.");
+      return;
+    }
+    const fields = [];
+    if (nameChanges.length > 0) {
+      fields.push({ label: "Название", original: name.trim(), normalized: normalizeText(name.trim()), changes: nameChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+    }
+    if (articleChanges.length > 0) {
+      fields.push({ label: "Артикул", original: article.trim(), normalized: normalizeText(article.trim()), changes: articleChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
+    }
+    setReconsiderMode(true);
+    setNormalizeFields(fields);
+  }
+
+  async function doSave(nameVal: string, articleVal: string, status: "normalized" | "kept_original") {
     setSaving(true);
     setError("");
     try {
@@ -96,7 +118,7 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
             base_price: parseFloat(basePrice) || 0,
             wholesale_price: parseFloat(wholesalePrice) || 0,
             watts: parseInt(watts) || 0,
-            is_normalized: isNormalized,
+            normalization_status: status,
           }],
         }),
       });
@@ -128,6 +150,16 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
             <Icon name="X" size={20} />
           </button>
         </div>
+
+        {wasKeptOriginal && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-sm">
+            <Icon name="AlertTriangle" size={16} className="text-amber-400 flex-shrink-0" />
+            <span className="text-foreground flex-1">Символы оставлены как есть</span>
+            <button type="button" onClick={openReconsider} className="text-amber-400 hover:text-amber-300 text-xs font-medium whitespace-nowrap">
+              Проверить снова
+            </button>
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-foreground mb-1.5">Название</label>
@@ -215,17 +247,18 @@ export default function NomenclatureEditForm({ data, onSuccess, onCancel }: Nome
       {normalizeFields && (
         <NormalizeDialog
           fields={normalizeFields}
+          reconsiderMode={reconsiderMode}
           onApply={(normalized) => {
             const n = normalized["Название"] || name.trim();
             const a = normalized["Артикул"] || article.trim();
             setName(n);
             setArticle(a);
             setNormalizeFields(null);
-            doSave(n, a, true);
+            doSave(n, a, "normalized");
           }}
           onKeepOriginal={() => {
             setNormalizeFields(null);
-            doSave(name.trim(), article.trim(), true);
+            doSave(name.trim(), article.trim(), "kept_original");
           }}
           onCancel={() => setNormalizeFields(null)}
         />

@@ -20,7 +20,7 @@ interface NomenclatureItem {
   max_retail: number;
   created_at: string;
   latest_product_date: string;
-  is_normalized: boolean;
+  normalization_status: string;
 }
 
 type SortField = "name" | "base_price" | "date";
@@ -36,7 +36,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [bulkNormalize, setBulkNormalize] = useState<{ id: number; label: string; fields: { label: string; original: string; normalized: string; changes: { original: string; normalized: string }[] }[] }[] | null>(null);
+  const [bulkNormalize, setBulkNormalize] = useState<{ id: number; label: string; reconsider: boolean; fields: { label: string; original: string; normalized: string; changes: { original: string; normalized: string }[] }[] }[] | null>(null);
   const [bulkIdx, setBulkIdx] = useState(0);
   const [bulkSaving, setBulkSaving] = useState(false);
   const [sortField, setSortField] = useState<SortField>(() => {
@@ -67,7 +67,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
 
   function runBulkCheck() {
     const problems = items
-      .filter((n) => !n.is_normalized)
+      .filter((n) => n.normalization_status !== "normalized")
       .map((n) => {
         const nameChanges = findMixedWords(n.name);
         const articleChanges = findMixedWords(n.article || "");
@@ -79,7 +79,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
         if (articleChanges.length > 0) {
           fields.push({ label: "Артикул", original: n.article, normalized: normalizeText(n.article), changes: articleChanges.map((c) => ({ original: c.original, normalized: c.normalized })) });
         }
-        return { id: n.id, label: n.name, fields };
+        return { id: n.id, label: n.name, reconsider: n.normalization_status === "kept_original", fields };
       })
       .filter(Boolean) as NonNullable<typeof bulkNormalize>[number][];
 
@@ -93,7 +93,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
 
   async function bulkApply(nomId: number, normalized: Record<string, string>) {
     setBulkSaving(true);
-    const payload: Record<string, unknown> = { id: nomId, is_normalized: true };
+    const payload: Record<string, unknown> = { id: nomId, normalization_status: "normalized" };
     if (normalized["Название"]) payload.name = normalized["Название"];
     if (normalized["Артикул"]) payload.article = normalized["Артикул"];
     await fetch(func2url["update-nomenclature"], {
@@ -110,7 +110,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
     await fetch(func2url["update-nomenclature"], {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ items: [{ id: nomId, is_normalized: true }] }),
+      body: JSON.stringify({ items: [{ id: nomId, normalization_status: "kept_original" }] }),
     });
     setBulkSaving(false);
     nextBulk();
@@ -352,6 +352,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
           </div>
           <NormalizeDialog
             fields={bulkNormalize[bulkIdx].fields}
+            reconsiderMode={bulkNormalize[bulkIdx].reconsider}
             onApply={(normalized) => bulkApply(bulkNormalize[bulkIdx].id, normalized)}
             onKeepOriginal={() => bulkKeep(bulkNormalize[bulkIdx].id)}
             onCancel={() => { setBulkNormalize(null); loadItems(); }}

@@ -159,7 +159,7 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
     return false;
   }
 
-  async function doSubmit(nameVal: string, articleVal: string) {
+  async function doSubmit(nameVal: string, articleVal: string, status: "normalized" | "kept_original" = "normalized") {
     setSaving(true);
     try {
       const n = nameVal;
@@ -189,6 +189,7 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
         condition,
         condition_image_url: condImageUrl,
         price_retail: parseFloat(retailPrice) || 0,
+        normalization_status: status,
       };
 
       if (nomenclatureId) {
@@ -441,7 +442,7 @@ export default function ProductForm({ onSuccess, onCancel, prefilledNomenclature
         }}
         onKeepOriginal={() => {
           setNormalizeFields(null);
-          doSubmit(name.trim(), article.trim());
+          doSubmit(name.trim(), article.trim(), "kept_original");
         }}
         onCancel={() => setNormalizeFields(null)}
       />

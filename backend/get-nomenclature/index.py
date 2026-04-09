@@ -13,7 +13,7 @@ def handler(event, context):
 
     cur.execute("""
         SELECT n.id, n.name, n.article, n.description, n.image_url,
-               n.base_price, n.wholesale_price, n.watts, n.created_at, n.is_normalized,
+               n.base_price, n.wholesale_price, n.watts, n.created_at, n.normalization_status,
                COUNT(p.id) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS products_count,
                MIN(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS min_retail,
                MAX(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS max_retail,
@@ -40,7 +40,7 @@ def handler(event, context):
             'wholesale_price': float(r[6] or 0),
             'watts': r[7] or 0,
             'created_at': str(r[8]),
-            'is_normalized': bool(r[9]),
+            'normalization_status': r[9] or 'unchecked',
             'products_count': int(r[10] or 0),
             'min_retail': float(r[11] or 0),
             'max_retail': float(r[12] or 0),

@@ -12,7 +12,15 @@ def handler(event, context):
         return {'statusCode': 405, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Method not allowed'})}
 
     raw_body = event.get('body') or '{}'
-    body = json.loads(raw_body) if isinstance(raw_body, str) else raw_body
+    if isinstance(raw_body, str):
+        try:
+            body = json.loads(raw_body)
+        except Exception:
+            body = {}
+    else:
+        body = raw_body
+    if not isinstance(body, dict):
+        body = {}
 
     name = (body.get('name') or '').strip()
     article = (body.get('article') or '').strip()
@@ -25,6 +33,9 @@ def handler(event, context):
     condition_image_url = (body.get('condition_image_url') or '').strip()
     price_retail = body.get('price_retail', 0)
     nomenclature_id = body.get('nomenclature_id')
+    normalization_status = (body.get('normalization_status') or 'unchecked').strip()
+    if normalization_status not in ('unchecked', 'normalized', 'kept_original'):
+        normalization_status = 'unchecked'
 
     if not name:
         return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Название обязательно'})}
@@ -42,13 +53,15 @@ def handler(event, context):
             conn.close()
             return {'statusCode': 404, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Номенклатура не найдена'})}
         nom_id = row[0]
+        if normalization_status != 'unchecked':
+            cur.execute(f"UPDATE nomenclature SET normalization_status = '{normalization_status}' WHERE id = {nom_id}")
     else:
         safe_name = name.replace("'", "''")
         safe_article = article.replace("'", "''")
         safe_desc = description.replace("'", "''")
         safe_img = image_url.replace("'", "''")
 
-        cur.execute(f"INSERT INTO nomenclature (name, article, description, image_url, base_price, wholesale_price, watts) VALUES ('{safe_name}', '{safe_article}', '{safe_desc}', '{safe_img}', {float(base_price)}, {float(wholesale_price)}, {int(watts)}) RETURNING id")
+        cur.execute(f"INSERT INTO nomenclature (name, article, description, image_url, base_price, wholesale_price, watts, normalization_status) VALUES ('{safe_name}', '{safe_article}', '{safe_desc}', '{safe_img}', {float(base_price)}, {float(wholesale_price)}, {int(watts)}, '{normalization_status}') RETURNING id")
         nom_id = cur.fetchone()[0]
 
     safe_cond = condition.replace("'", "''")

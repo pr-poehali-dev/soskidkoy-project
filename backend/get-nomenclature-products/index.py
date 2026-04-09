@@ -22,7 +22,7 @@ def handler(event, context):
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
 
-    cur.execute(f"SELECT id, name, article, description, image_url, base_price, wholesale_price, watts FROM nomenclature WHERE id = {nom_id_int}")
+    cur.execute(f"SELECT id, name, article, description, image_url, base_price, wholesale_price, watts, COALESCE(normalization_status, 'unchecked') FROM nomenclature WHERE id = {nom_id_int}")
     nom_row = cur.fetchone()
 
     if not nom_row:
@@ -38,7 +38,8 @@ def handler(event, context):
         'image_url': nom_row[4] or '',
         'base_price': float(nom_row[5] or 0),
         'wholesale_price': float(nom_row[6] or 0),
-        'watts': nom_row[7] or 0
+        'watts': nom_row[7] or 0,
+        'normalization_status': nom_row[8] or 'unchecked'
     }
 
     cur.execute(f"SELECT id, condition, condition_image_url, price_retail, created_at, COALESCE(status, 'в наличии') FROM products WHERE nomenclature_id = {nom_id_int} AND COALESCE(status, 'в наличии') = 'в наличии' ORDER BY created_at DESC")

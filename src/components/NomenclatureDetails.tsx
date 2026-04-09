@@ -15,6 +15,7 @@ interface Nomenclature {
   base_price: number;
   wholesale_price: number;
   watts: number;
+  normalization_status?: string;
 }
 
 interface ProductItem {
