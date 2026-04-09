@@ -163,6 +163,10 @@ export default function Auth() {
     return null;
   }
 
+  if (user && user.role === "admin") {
+    return <AdminPanel user={user} onLogout={handleLogout} />;
+  }
+
   if (user) {
     return <Dashboard user={user} admins={admins} onLogout={handleLogout} onDelete={handleDeleteAdmin} onCreate={handleCreateAdmin} />;
   }
@@ -304,6 +308,52 @@ export default function Auth() {
           <p className="text-center text-xs text-muted-foreground mt-4">Только для владельца системы</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function AdminPanel({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  return (
+    <div className="min-h-screen bg-background animate-fade-in">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-5%] w-[400px] h-[400px] rounded-full bg-primary/4 blur-[100px]" />
+      </div>
+
+      <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center">
+              <Icon name="UserCircle" size={18} className="text-muted-foreground" />
+            </div>
+            <div>
+              <h1 className="font-bold text-foreground text-sm leading-none">Панель администратора</h1>
+              <p className="text-muted-foreground text-xs mt-0.5">{user.phone}</p>
+            </div>
+          </div>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-secondary"
+          >
+            <Icon name="LogOut" size={14} />
+            Выйти
+          </button>
+        </div>
+      </header>
+
+      <main className="max-w-2xl mx-auto px-4 py-12 relative z-10">
+        <div className="text-center animate-slide-up">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-primary/10 border border-primary/20 mb-6">
+            <Icon name="Hand" size={36} className="text-primary" />
+          </div>
+          <h2 className="text-3xl font-bold text-foreground mb-2">Habari Msimamizi!</h2>
+          <p className="text-muted-foreground text-base mb-8">Добро пожаловать в панель администратора</p>
+          <div className="auth-glass rounded-2xl p-6 text-left">
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Этот раздел находится в разработке. Скоро здесь появятся инструменты для управления системой.
+            </p>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
