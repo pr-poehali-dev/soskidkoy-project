@@ -91,6 +91,8 @@ def handler(event, context):
                 data=payload,
                 vapid_private_key=vapid_private,
                 vapid_claims={'sub': 'mailto:admin@poehali.dev'},
+                ttl=86400,
+                headers={'Urgency': 'high', 'Topic': 'admin'},
             )
             sent += 1
         except WebPushException as e:

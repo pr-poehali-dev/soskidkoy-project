@@ -1,4 +1,4 @@
-const CACHE_NAME = 'admin-panel-v2';
+const CACHE_NAME = 'admin-panel-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -47,14 +47,18 @@ self.addEventListener('push', (event) => {
     data.body = event.data ? event.data.text() : '';
   }
 
+  console.log('[SW] Push received:', data);
+
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
       icon: '/favicon.svg',
       badge: '/favicon.svg',
-      vibrate: [200, 100, 200],
-      tag: 'admin-push',
+      vibrate: [200, 100, 200, 100, 200],
+      tag: 'admin-push-' + Date.now(),
       renotify: true,
+      requireInteraction: true,
+      silent: false,
     })
   );
 });

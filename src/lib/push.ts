@@ -12,12 +12,16 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export async function subscribeToPush(adminId: number): Promise<boolean> {
+  console.log("[Push] Starting subscription for admin:", adminId);
+
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    console.warn("[Push] Service Worker or PushManager not supported");
     return false;
   }
 
   try {
     const permission = await Notification.requestPermission();
+    console.log("[Push] Permission:", permission);
     if (permission !== "granted") {
       return false;
     }
@@ -25,17 +29,27 @@ export async function subscribeToPush(adminId: number): Promise<boolean> {
     const keyRes = await fetch(func2url["push-subscribe"]);
     const keyData = await keyRes.json();
     const vapidPublicKey = keyData.vapid_public_key;
+    console.log("[Push] VAPID key received:", vapidPublicKey ? "yes" : "no");
     if (!vapidPublicKey) {
       return false;
     }
 
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
+    console.log("[Push] SW ready, scope:", registration.scope);
+
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) {
+      console.log("[Push] Reusing existing subscription");
+    }
+
+    const subscription = existing || await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
     const subJson = subscription.toJSON();
+    console.log("[Push] Endpoint:", subJson.endpoint);
+
     const res = await fetch(func2url["push-subscribe"], {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -48,8 +62,10 @@ export async function subscribeToPush(adminId: number): Promise<boolean> {
     });
 
     const data = await res.json();
+    console.log("[Push] Saved:", data);
     return data.success === true;
-  } catch {
+  } catch (err) {
+    console.error("[Push] Error:", err);
     return false;
   }
 }
