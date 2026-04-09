@@ -183,6 +183,8 @@ export default function ProductForm({ onSuccess, onCancel }: ProductFormProps) {
     { value: "как новый", label: "Как новый" },
     { value: "отличный", label: "Отличный" },
     { value: "хороший", label: "Хороший" },
+    { value: "под ремонт", label: "Под ремонт" },
+    { value: "утиль", label: "Утиль" },
   ];
 
   return (
@@ -294,7 +296,7 @@ export default function ProductForm({ onSuccess, onCancel }: ProductFormProps) {
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-1.5">Характеристика</label>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {conditions.map((c) => (
             <button
               key={c.value}

@@ -28,8 +28,8 @@ def handler(event, context):
 
     if not name:
         return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Название обязательно'})}
-    if condition not in ('новый', 'как новый', 'отличный', 'хороший'):
-        return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Укажите характеристику: новый, как новый, отличный или хороший'})}
+    if condition not in ('новый', 'как новый', 'отличный', 'хороший', 'под ремонт', 'утиль'):
+        return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': 'Укажите характеристику'})}
 
     conn = psycopg2.connect(os.environ['DATABASE_URL'])
     cur = conn.cursor()
