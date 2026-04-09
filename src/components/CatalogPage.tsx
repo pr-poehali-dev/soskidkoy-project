@@ -32,6 +32,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>(() => {
     const saved = localStorage.getItem("catalog_sort_field");
     return (saved === "name" || saved === "base_price" || saved === "date") ? saved : "date";
@@ -58,7 +59,16 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
     }
   }
 
-  const sortedItems = [...items].sort((a, b) => {
+  const query = searchQuery.trim().toLowerCase();
+  const filteredItems = query
+    ? items.filter(
+        (n) =>
+          n.name.toLowerCase().includes(query) ||
+          (n.article || "").toLowerCase().includes(query)
+      )
+    : items;
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
     let cmp = 0;
     if (sortField === "name") {
       cmp = a.name.localeCompare(b.name, "ru");
@@ -153,6 +163,27 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
           </div>
         ) : (
           <>
+            <div className="relative mb-3">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Icon name="Search" size={16} className="text-muted-foreground" />
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Поиск по названию или артикулу"
+                className="w-full pl-9 pr-9 py-2.5 rounded-xl bg-secondary/50 border border-border text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:border-primary/40 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Icon name="X" size={14} />
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
               <span className="text-xs text-muted-foreground flex-shrink-0">Сортировка:</span>
               {([
@@ -181,6 +212,14 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
                 );
               })}
             </div>
+            {sortedItems.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-secondary border border-border mb-3">
+                  <Icon name="SearchX" size={22} className="text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">Ничего не найдено по запросу «{searchQuery}»</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {sortedItems.map((n) => (
               <button
@@ -224,6 +263,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
               </button>
             ))}
             </div>
+            )}
           </>
         )}
       </main>
