@@ -118,7 +118,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
                     <img
                       src={p.condition_image_url || p.image_url}
                       alt={p.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
