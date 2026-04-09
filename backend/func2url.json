@@ -1,4 +1,6 @@
 {
+  "get-nomenclature-products": "https://functions.poehali.dev/686c7894-ed60-4682-9721-d22ebc47d6e4",
+  "get-nomenclature": "https://functions.poehali.dev/5b75d339-25ea-4b70-8b70-545f252ffbf7",
   "create-product": "https://functions.poehali.dev/04c86434-3263-4dd4-97cf-1a7aa4e26bc1",
   "upload-image": "https://functions.poehali.dev/e91a48b0-2ebe-4ca0-aa8d-ef1991cb4b2a",
   "get-products": "https://functions.poehali.dev/74ed5c21-9bff-4224-b665-c1a2d55f20b2",
