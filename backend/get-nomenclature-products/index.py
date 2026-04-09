@@ -41,7 +41,7 @@ def handler(event, context):
         'watts': nom_row[7] or 0
     }
 
-    cur.execute(f"SELECT id, condition, condition_image_url, price_retail, created_at FROM products WHERE nomenclature_id = {nom_id_int} ORDER BY created_at DESC")
+    cur.execute(f"SELECT id, condition, condition_image_url, price_retail, created_at, COALESCE(status, 'в наличии') FROM products WHERE nomenclature_id = {nom_id_int} AND COALESCE(status, 'в наличии') = 'в наличии' ORDER BY created_at DESC")
     prod_rows = cur.fetchall()
 
     cur.close()
@@ -54,7 +54,8 @@ def handler(event, context):
             'condition': r[1],
             'condition_image_url': r[2] or '',
             'price_retail': float(r[3] or 0),
-            'created_at': str(r[4])
+            'created_at': str(r[4]),
+            'status': r[5]
         })
 
     return {

@@ -190,7 +190,7 @@ export default function ProductForm({ onSuccess, onCancel }: ProductFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-lg font-bold text-foreground">Создание карточки товара</h2>
+        <h2 className="text-lg font-bold text-foreground">Добавление товара</h2>
         <button type="button" onClick={onCancel} className="text-muted-foreground hover:text-foreground transition-colors">
           <Icon name="X" size={20} />
         </button>

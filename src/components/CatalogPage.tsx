@@ -84,7 +84,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all"
           >
             <Icon name="Plus" size={16} />
-            Создать карточку
+            Добавить товар
           </button>
         </div>
       </header>
@@ -105,7 +105,7 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:brightness-110 transition-all"
             >
               <Icon name="Plus" size={16} />
-              Создать первую карточку
+              Добавить первый товар
             </button>
           </div>
         ) : (

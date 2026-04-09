@@ -14,9 +14,9 @@ def handler(event, context):
     cur.execute("""
         SELECT n.id, n.name, n.article, n.description, n.image_url,
                n.base_price, n.wholesale_price, n.watts, n.created_at,
-               COUNT(p.id) AS products_count,
-               MIN(p.price_retail) AS min_retail,
-               MAX(p.price_retail) AS max_retail
+               COUNT(p.id) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS products_count,
+               MIN(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS min_retail,
+               MAX(p.price_retail) FILTER (WHERE COALESCE(p.status, 'в наличии') = 'в наличии') AS max_retail
         FROM nomenclature n
         LEFT JOIN products p ON p.nomenclature_id = n.id
         GROUP BY n.id

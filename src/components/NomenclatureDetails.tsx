@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/ui/icon";
 import func2url from "../../backend/func2url.json";
+import ProductActionDialog from "@/components/ProductActionDialog";
+import MovementHistory from "@/components/MovementHistory";
 
 interface Nomenclature {
   id: number;
@@ -26,27 +28,32 @@ interface NomenclatureDetailsProps {
   onBack: () => void;
 }
 
+const CONDITION_ORDER = ["новый", "как новый", "отличный", "хороший", "под ремонт", "утиль"];
+
 export default function NomenclatureDetails({ nomenclatureId, onBack }: NomenclatureDetailsProps) {
   const [nomenclature, setNomenclature] = useState<Nomenclature | null>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionCondition, setActionCondition] = useState<string | null>(null);
+  const [historyKey, setHistoryKey] = useState(0);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${func2url["get-nomenclature-products"]}?nomenclature_id=${nomenclatureId}`);
+      const data = await res.json();
+      setNomenclature(data.nomenclature || null);
+      setProducts(data.products || []);
+    } catch {
+      setNomenclature(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [nomenclatureId]);
 
   useEffect(() => {
-    async function load() {
-      setLoading(true);
-      try {
-        const res = await fetch(`${func2url["get-nomenclature-products"]}?nomenclature_id=${nomenclatureId}`);
-        const data = await res.json();
-        setNomenclature(data.nomenclature || null);
-        setProducts(data.products || []);
-      } catch {
-        setNomenclature(null);
-      } finally {
-        setLoading(false);
-      }
-    }
     load();
-  }, [nomenclatureId]);
+  }, [load]);
 
   function conditionBadgeColor(c: string) {
     if (c === "новый") return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
@@ -60,6 +67,24 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
 
   function formatPrice(v: number) {
     return v.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+
+  const groups = CONDITION_ORDER
+    .map((cond) => {
+      const items = products.filter((p) => p.condition === cond);
+      if (items.length === 0) return null;
+      const prices = items.map((i) => i.price_retail).filter((p) => p > 0);
+      const minPrice = prices.length ? Math.min(...prices) : 0;
+      const maxPrice = prices.length ? Math.max(...prices) : 0;
+      const preview = items.find((i) => i.condition_image_url)?.condition_image_url || "";
+      return { condition: cond, items, minPrice, maxPrice, preview };
+    })
+    .filter(Boolean) as { condition: string; items: ProductItem[]; minPrice: number; maxPrice: number; preview: string }[];
+
+  function handleActionDone() {
+    setActionCondition(null);
+    setHistoryKey((k) => k + 1);
+    load();
   }
 
   return (
@@ -110,6 +135,10 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
                         <span className="text-foreground font-medium">{nomenclature.watts} Вт</span>
                       </div>
                     )}
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/30 text-xs">
+                      <Icon name="Package" size={12} className="text-primary" />
+                      <span className="text-foreground font-medium">Всего в наличии: {products.length}</span>
+                    </div>
                   </div>
                   <div className="pt-2 border-t border-border space-y-1">
                     <div className="flex justify-between text-sm">
@@ -127,21 +156,26 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
 
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3">
-                Характеристики ({products.length})
+                Остатки по состоянию
               </h3>
-              {products.length === 0 ? (
+              {groups.length === 0 ? (
                 <div className="auth-glass rounded-2xl p-8 text-center">
-                  <p className="text-muted-foreground text-sm">Нет доступных характеристик</p>
+                  <p className="text-muted-foreground text-sm">Нет товаров в наличии</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  {products.map((p) => (
-                    <div key={p.id} className="auth-glass rounded-2xl overflow-hidden hover:border-primary/30 transition-all group">
+                  {groups.map((g) => (
+                    <button
+                      key={g.condition}
+                      type="button"
+                      onClick={() => setActionCondition(g.condition)}
+                      className="auth-glass rounded-2xl overflow-hidden hover:border-primary/50 transition-all group text-left"
+                    >
                       <div className="aspect-square bg-secondary/50 relative overflow-hidden">
-                        {p.condition_image_url ? (
+                        {g.preview ? (
                           <img
-                            src={p.condition_image_url}
-                            alt={p.condition}
+                            src={g.preview}
+                            alt={g.condition}
                             className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300"
                           />
                         ) : (
@@ -149,22 +183,40 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
                             <Icon name="Image" size={40} className="text-muted-foreground/30" />
                           </div>
                         )}
-                        <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg border text-xs font-medium ${conditionBadgeColor(p.condition)}`}>
-                          {p.condition.charAt(0).toUpperCase() + p.condition.slice(1)}
+                        <div className={`absolute top-3 left-3 px-2 py-1 rounded-lg border text-xs font-medium ${conditionBadgeColor(g.condition)}`}>
+                          {g.condition.charAt(0).toUpperCase() + g.condition.slice(1)}
+                        </div>
+                        <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-primary/90 text-primary-foreground text-xs font-bold">
+                          {g.items.length} шт
                         </div>
                       </div>
                       <div className="p-3">
                         <p className="text-xs text-muted-foreground">Розничная</p>
-                        <p className="text-primary font-bold text-sm sm:text-base truncate">{formatPrice(p.price_retail)} &#8381;</p>
+                        <p className="text-primary font-bold text-sm sm:text-base truncate">
+                          {g.minPrice === g.maxPrice
+                            ? `${formatPrice(g.minPrice)} ₽`
+                            : `${formatPrice(g.minPrice)}–${formatPrice(g.maxPrice)} ₽`}
+                        </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
+
+            <MovementHistory key={historyKey} nomenclatureId={nomenclatureId} />
           </div>
         )}
       </main>
+
+      {actionCondition && (
+        <ProductActionDialog
+          products={products.filter((p) => p.condition === actionCondition)}
+          condition={actionCondition}
+          onClose={() => setActionCondition(null)}
+          onDone={handleActionDone}
+        />
+      )}
     </div>
   );
 }

@@ -1,0 +1,43 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "GET without nomenclature_id",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 400
+    },
+    {
+      "name": "GET with invalid id",
+      "method": "GET",
+      "path": "/?nomenclature_id=abc",
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST missing fields",
+      "method": "POST",
+      "path": "/",
+      "body": {},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST invalid type",
+      "method": "POST",
+      "path": "/",
+      "body": {"product_id": 1, "movement_type": "bad"},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST nonexistent product",
+      "method": "POST",
+      "path": "/",
+      "body": {"product_id": 999999, "movement_type": "sold"},
+      "expectedStatus": 404
+    }
+  ]
+}
