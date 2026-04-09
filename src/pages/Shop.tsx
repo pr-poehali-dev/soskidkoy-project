@@ -443,8 +443,17 @@ export default function Shop() {
                   onChange={handlePhoneChange}
                   onKeyDown={handlePhoneKeyDown}
                   placeholder="+7 (___) ___-__-__"
-                  className="w-full pl-10 pr-4 py-3 bg-transparent rounded-xl text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                  className="w-full pl-10 pr-9 py-3 bg-transparent rounded-xl text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
                 />
+                {phone && (
+                  <button
+                    type="button"
+                    onClick={() => { setPhone(""); setError(""); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                  >
+                    <Icon name="X" size={14} />
+                  </button>
+                )}
               </div>
             </div>
 
