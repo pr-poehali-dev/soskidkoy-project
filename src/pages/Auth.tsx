@@ -55,7 +55,14 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const saved = localStorage.getItem("admin_session");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed.role === "admin") return parsed;
+    }
+    return null;
+  });
   const [admins, setAdmins] = useState<Admin[]>([]);
   const [ownerExists, setOwnerExists] = useState<boolean | null>(null);
 
@@ -121,6 +128,9 @@ export default function Auth() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Ошибка входа"); return; }
       setUser(data);
+      if (data.role === "admin") {
+        localStorage.setItem("admin_session", JSON.stringify(data));
+      }
       await loadAdmins(data.role);
     } catch {
       setError("Ошибка соединения с сервером");
@@ -167,6 +177,7 @@ export default function Auth() {
   }
 
   function handleLogout() {
+    localStorage.removeItem("admin_session");
     setUser(null);
     setAdmins([]);
     setPhone("");
