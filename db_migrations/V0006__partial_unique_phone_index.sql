@@ -1,0 +1,2 @@
+ALTER TABLE t_p8954954_soskidkoy_project.admins DROP CONSTRAINT IF EXISTS admins_phone_key;
+CREATE UNIQUE INDEX admins_phone_active_unique ON t_p8954954_soskidkoy_project.admins (phone) WHERE role != 'removed' AND is_active = true;
