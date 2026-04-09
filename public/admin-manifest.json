@@ -1,8 +1,9 @@
 {
-  "name": "Магазин",
-  "short_name": "Магазин",
-  "description": "Каталог товаров со скидкой",
-  "start_url": "/",
+  "name": "Админ-панель",
+  "short_name": "Админка",
+  "description": "Панель управления товарами и номенклатурой",
+  "start_url": "/admin",
+  "scope": "/admin",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0d0d0f",

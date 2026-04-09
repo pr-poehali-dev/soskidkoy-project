@@ -73,6 +73,14 @@ export default function Auth() {
   const strength = getPasswordStrength(password);
 
   useEffect(() => {
+    const link = document.querySelector('link[rel="manifest"]');
+    if (link) link.setAttribute("href", "/admin-manifest.json");
+    return () => {
+      if (link) link.setAttribute("href", "/manifest.json");
+    };
+  }, []);
+
+  useEffect(() => {
     fetch(func2url["auth-register"])
       .then((r) => r.json())
       .then((data) => {
