@@ -49,6 +49,7 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
   }, [nomenclatureId]);
 
   function conditionBadgeColor(c: string) {
+    if (c === "новый") return "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
     if (c === "как новый") return "bg-green-500/15 text-green-400 border-green-500/30";
     if (c === "отличный") return "bg-blue-500/15 text-blue-400 border-blue-500/30";
     return "bg-amber-500/15 text-amber-400 border-amber-500/30";
@@ -149,11 +150,9 @@ export default function NomenclatureDetails({ nomenclatureId, onBack }: Nomencla
                           {p.condition.charAt(0).toUpperCase() + p.condition.slice(1)}
                         </div>
                       </div>
-                      <div className="p-4">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-xs text-muted-foreground">Розничная</span>
-                          <span className="text-primary font-bold text-base">{formatPrice(p.price_retail)} &#8381;</span>
-                        </div>
+                      <div className="p-3">
+                        <p className="text-xs text-muted-foreground">Розничная</p>
+                        <p className="text-primary font-bold text-sm sm:text-base truncate">{formatPrice(p.price_retail)} &#8381;</p>
                       </div>
                     </div>
                   ))}

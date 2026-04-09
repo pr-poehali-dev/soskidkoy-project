@@ -135,17 +135,17 @@ export default function CatalogPage({ onBack }: CatalogPageProps) {
                     </div>
                   )}
                 </div>
-                <div className="p-4 space-y-2">
+                <div className="p-3 space-y-1.5">
                   <h3 className="font-semibold text-foreground text-sm leading-tight line-clamp-2">{n.name}</h3>
-                  {n.article && <p className="text-xs text-muted-foreground">Арт. {n.article}</p>}
+                  {n.article && <p className="text-xs text-muted-foreground truncate">Арт. {n.article}</p>}
                   <div className="space-y-1 pt-1">
-                    <div className="flex justify-between text-xs">
+                    <div className="flex flex-wrap justify-between text-xs gap-x-1">
                       <span className="text-muted-foreground">Базовая</span>
-                      <span className="text-foreground font-medium">{formatPrice(n.base_price)} &#8381;</span>
+                      <span className="text-foreground font-medium truncate">{formatPrice(n.base_price)} &#8381;</span>
                     </div>
-                    <div className="flex justify-between text-xs">
+                    <div className="flex flex-wrap justify-between text-xs gap-x-1">
                       <span className="text-muted-foreground">Оптовая</span>
-                      <span className="text-foreground font-medium">{formatPrice(n.wholesale_price)} &#8381;</span>
+                      <span className="text-foreground font-medium truncate">{formatPrice(n.wholesale_price)} &#8381;</span>
                     </div>
                   </div>
                 </div>
