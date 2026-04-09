@@ -265,7 +265,7 @@ export default function Shop() {
   // --- Catalog view ---
   if (session) {
     return (
-      <div className="min-h-screen bg-background animate-fade-in">
+      <div className="min-h-screen bg-background animate-fade-in shop-theme">
         <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
           <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
             <h1 className="font-bold text-foreground">Товары</h1>
@@ -419,7 +419,7 @@ export default function Shop() {
 
   // --- Auth view ---
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 animate-fade-in">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 animate-fade-in shop-theme">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
         <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-primary/4 blur-[100px]" />

@@ -79,7 +79,7 @@ export default function ShopProductDetails({ productId, onBack }: ShopProductDet
   const maxRetail = allPrices.length ? Math.max(...allPrices) : 0;
 
   return (
-    <div className="min-h-screen bg-background animate-fade-in">
+    <div className="min-h-screen bg-background animate-fade-in shop-theme">
       <header className="border-b border-border sticky top-0 bg-background/80 backdrop-blur-md z-10">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <button onClick={onBack} className="text-muted-foreground hover:text-foreground transition-colors">
