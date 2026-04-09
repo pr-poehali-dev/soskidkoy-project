@@ -1,4 +1,7 @@
 {
+  "customer-catalog": "https://functions.poehali.dev/e14af24e-19b2-4a32-abd6-34e826dd382b",
+  "customer-login": "https://functions.poehali.dev/41d6016b-38bf-4a1b-818f-f517bdbf4fb1",
+  "customer-register": "https://functions.poehali.dev/64e7163f-ce09-451a-9f9b-c50ebc6d04ac",
   "update-nomenclature": "https://functions.poehali.dev/56629ff8-1c6e-4812-ae7a-bc169a5b41dc",
   "push-send": "https://functions.poehali.dev/dc3f9ca4-1c22-43be-a248-d9d4dd42b0f6",
   "push-subscribe": "https://functions.poehali.dev/d581bc97-3660-4943-a216-be9acaee9a17",

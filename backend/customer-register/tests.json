@@ -1,0 +1,7 @@
+{
+  "tests": [
+    {"name": "OPTIONS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200},
+    {"name": "POST missing fields", "method": "POST", "path": "/", "body": {}, "expectedStatus": 400},
+    {"name": "POST short password", "method": "POST", "path": "/", "body": {"phone": "+7 (999) 111-22-33", "password": "123"}, "expectedStatus": 400}
+  ]
+}
