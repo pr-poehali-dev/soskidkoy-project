@@ -76,6 +76,27 @@ export default function Auth() {
     setError("");
   }
 
+  function handlePhoneKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace") {
+      const digits = phone.replace(/\D/g, "");
+      if (digits.length <= 1) {
+        e.preventDefault();
+        setPhone("");
+        return;
+      }
+      const cursorPos = (e.target as HTMLInputElement).selectionStart || 0;
+      const textBefore = phone.slice(0, cursorPos);
+      const digitsBefore = textBefore.replace(/\D/g, "").length;
+      const charBefore = phone[cursorPos - 1];
+      if (charBefore && /\D/.test(charBefore)) {
+        e.preventDefault();
+        const allDigits = digits.slice(0, digitsBefore - 1 < 1 ? 1 : digitsBefore) + digits.slice(digitsBefore);
+        const formatted = allDigits.length <= 1 ? "" : formatPhone(allDigits);
+        setPhone(formatted);
+      }
+    }
+  }
+
   const loadAdmins = useCallback(async (role: string) => {
     if (role !== "owner") return;
     const res = await fetch(func2url["auth-admins"], {
@@ -204,6 +225,7 @@ export default function Auth() {
                   type="tel"
                   value={phone}
                   onChange={handlePhoneChange}
+                  onKeyDown={handlePhoneKeyDown}
                   placeholder="+7 (___) ___-__-__"
                   className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
                   autoComplete="tel"
