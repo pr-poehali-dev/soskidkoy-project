@@ -238,9 +238,18 @@ export default function Auth() {
                   onChange={handlePhoneChange}
                   onKeyDown={handlePhoneKeyDown}
                   placeholder="+7 (___) ___-__-__"
-                  className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                  className="w-full pl-9 pr-10 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
                   autoComplete="tel"
                 />
+                {phone && (
+                  <button
+                    type="button"
+                    onClick={() => { setPhone(""); setError(""); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <Icon name="X" size={14} />
+                  </button>
+                )}
               </div>
             </div>
 
