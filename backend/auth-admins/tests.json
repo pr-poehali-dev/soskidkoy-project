@@ -8,6 +8,25 @@
       "expectedStatus": 200,
       "expectedBody": "string",
       "bodyMatcher": "partial"
+    },
+    {
+      "name": "Forbidden without owner role",
+      "method": "GET",
+      "path": "/",
+      "headers": {"X-User-Role": "admin"},
+      "expectedStatus": 403,
+      "expectedBody": "string",
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Create admin missing fields",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-User-Role": "owner"},
+      "body": {"phone": "", "password": ""},
+      "expectedStatus": 400,
+      "expectedBody": "string",
+      "bodyMatcher": "partial"
     }
   ]
 }

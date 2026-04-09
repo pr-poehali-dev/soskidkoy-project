@@ -1,13 +1,17 @@
-"""Список всех администраторов. Доступен только для владельца."""
+"""Управление администраторами. GET — список, POST — создание, DELETE — удаление. Только для владельца."""
 import json
 import os
+import hashlib
 import psycopg2
 
 CORS_HEADERS = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-User-Id, X-User-Role',
 }
+
+def hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 def get_conn():
     dsn = os.environ['DATABASE_URL']
@@ -30,6 +34,39 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
     method = event.get('httpMethod')
 
+    if method == 'POST':
+        body = json.loads(event.get('body') or '{}')
+        phone = (body.get('phone') or '').strip()
+        password = (body.get('password') or '').strip()
+
+        if not phone or not password:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Телефон и пароль обязательны'})}
+
+        if len(password) < 8:
+            cur.close(); conn.close()
+            return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Пароль минимум 8 символов'})}
+
+        cur.execute(f"SELECT id FROM {schema}.admins WHERE phone = %s AND role != 'removed' AND is_active = true", (phone,))
+        if cur.fetchone():
+            cur.close(); conn.close()
+            return {'statusCode': 409, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'Этот номер уже зарегистрирован'})}
+
+        pwd_hash = hash_password(password)
+        cur.execute(
+            f"INSERT INTO {schema}.admins (phone, password_hash, role, is_active) VALUES (%s, %s, 'admin', true) RETURNING id, phone, role, created_at",
+            (phone, pwd_hash)
+        )
+        row = cur.fetchone()
+        conn.commit()
+        cur.close(); conn.close()
+
+        return {
+            'statusCode': 201,
+            'headers': CORS_HEADERS,
+            'body': json.dumps({'id': row[0], 'phone': row[1], 'role': row[2], 'createdAt': str(row[3])[:10]})
+        }
+
     if method == 'DELETE':
         params = event.get('queryStringParameters') or {}
         admin_id = params.get('id')
@@ -37,7 +74,7 @@ def handler(event: dict, context) -> dict:
             cur.close(); conn.close()
             return {'statusCode': 400, 'headers': CORS_HEADERS, 'body': json.dumps({'error': 'ID не указан'})}
 
-        cur.execute(f"DELETE FROM {schema}.admins WHERE id = %s AND role != 'owner'", (int(admin_id),))
+        cur.execute(f"UPDATE {schema}.admins SET is_active = false, role = 'removed' WHERE id = %s AND role = 'admin'", (int(admin_id),))
         conn.commit()
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps({'success': True})}

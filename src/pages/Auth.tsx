@@ -151,8 +151,20 @@ export default function Auth() {
     setPassword("");
   }
 
+  async function handleCreateAdmin(adminPhone: string, adminPassword: string): Promise<string | null> {
+    const res = await fetch(func2url["auth-admins"], {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-User-Role": "owner" },
+      body: JSON.stringify({ phone: adminPhone, password: adminPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) return data.error || "Ошибка создания";
+    setAdmins((prev) => [...prev, data]);
+    return null;
+  }
+
   if (user) {
-    return <Dashboard user={user} admins={admins} onLogout={handleLogout} onDelete={handleDeleteAdmin} />;
+    return <Dashboard user={user} admins={admins} onLogout={handleLogout} onDelete={handleDeleteAdmin} onCreate={handleCreateAdmin} />;
   }
 
   return (
@@ -301,12 +313,35 @@ function Dashboard({
   admins,
   onLogout,
   onDelete,
+  onCreate,
 }: {
   user: AuthUser;
   admins: Admin[];
   onLogout: () => void;
   onDelete: (id: number) => void;
+  onCreate: (phone: string, password: string) => Promise<string | null>;
 }) {
+  const [showForm, setShowForm] = useState(false);
+  const [newPhone, setNewPhone] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const digits = newPhone.replace(/\D/g, "");
+    if (digits.length < 11) { setFormError("Введите корректный номер"); return; }
+    if (newPassword.length < 8) { setFormError("Пароль минимум 8 символов"); return; }
+    setFormLoading(true);
+    setFormError("");
+    const err = await onCreate(formatPhone(newPhone), newPassword);
+    setFormLoading(false);
+    if (err) { setFormError(err); return; }
+    setShowForm(false);
+    setNewPhone("");
+    setNewPassword("");
+  }
+
   return (
     <div className="min-h-screen bg-background animate-fade-in">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -339,14 +374,63 @@ function Dashboard({
           <div>
             <h2 className="text-lg font-bold text-foreground">Администраторы</h2>
             <p className="text-muted-foreground text-sm">
-              Всего: {admins.length} • Активных: {admins.filter((a) => a.role === "admin").length}
+              Всего: {admins.length} • Админов: {admins.filter((a) => a.role === "admin").length}
             </p>
           </div>
-          <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-1.5">
-            <Icon name="Users" size={14} className="text-primary" />
-            <span className="text-primary font-semibold text-sm">{admins.length}</span>
-          </div>
+          <button
+            onClick={() => { setShowForm(!showForm); setFormError(""); }}
+            className="flex items-center gap-2 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all"
+          >
+            <Icon name={showForm ? "X" : "UserPlus"} size={14} />
+            {showForm ? "Отмена" : "Добавить"}
+          </button>
         </div>
+
+        {showForm && (
+          <div className="auth-glass rounded-2xl p-5 mb-5 animate-slide-up">
+            <h3 className="font-semibold text-foreground text-sm mb-4">Новый администратор</h3>
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <Icon name="Phone" size={16} className="text-muted-foreground" />
+                </span>
+                <input
+                  type="tel"
+                  value={newPhone}
+                  onChange={(e) => { setNewPhone(formatPhone(e.target.value)); setFormError(""); }}
+                  placeholder="+7 (___) ___-__-__"
+                  className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                />
+              </div>
+              <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                  <Icon name="Lock" size={16} className="text-muted-foreground" />
+                </span>
+                <input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => { setNewPassword(e.target.value); setFormError(""); }}
+                  placeholder="Пароль (мин. 8 символов)"
+                  className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+                />
+              </div>
+              {formError && (
+                <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-3 py-2.5 border border-destructive/20">
+                  <Icon name="AlertCircle" size={14} />
+                  {formError}
+                </div>
+              )}
+              <button
+                type="submit"
+                disabled={formLoading}
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {formLoading && <Icon name="Loader2" size={16} className="animate-spin" />}
+                Создать администратора
+              </button>
+            </form>
+          </div>
+        )}
 
         <div className="space-y-3">
           {admins.map((admin, index) => (
@@ -377,8 +461,13 @@ function Dashboard({
                         Владелец
                       </span>
                     )}
+                    {admin.role === "admin" && (
+                      <span className="text-[10px] bg-secondary text-muted-foreground border border-border rounded-full px-2 py-0.5 font-semibold uppercase tracking-wide">
+                        Админ
+                      </span>
+                    )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Зарегистрирован: {admin.createdAt}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Добавлен: {admin.createdAt}</p>
                 </div>
               </div>
 
@@ -394,10 +483,10 @@ function Dashboard({
           ))}
         </div>
 
-        {admins.length <= 1 && (
+        {admins.filter((a) => a.role === "admin").length === 0 && !showForm && (
           <div className="text-center py-8 text-muted-foreground text-sm">
             <Icon name="UserPlus" size={32} className="mx-auto mb-2 opacity-30" />
-            <p>Зарегистрируйте первого администратора</p>
+            <p>Нажмите «Добавить» чтобы создать первого администратора</p>
           </div>
         )}
       </main>
