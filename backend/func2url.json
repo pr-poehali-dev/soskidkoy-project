@@ -1,4 +1,8 @@
 {
+  "create-product": "https://functions.poehali.dev/04c86434-3263-4dd4-97cf-1a7aa4e26bc1",
+  "upload-image": "https://functions.poehali.dev/e91a48b0-2ebe-4ca0-aa8d-ef1991cb4b2a",
+  "get-products": "https://functions.poehali.dev/74ed5c21-9bff-4224-b665-c1a2d55f20b2",
+  "search-nomenclature": "https://functions.poehali.dev/2aad35f7-dccd-4574-9d05-adfb8200f8da",
   "auth-register": "https://functions.poehali.dev/d0233a67-d8ec-4e63-ae6c-45f0c91f3100",
   "auth-login": "https://functions.poehali.dev/723b3138-2d1e-41dc-9582-c263f7f7282b",
   "auth-admins": "https://functions.poehali.dev/d2233e42-cf5c-4bce-b672-207763bf8d58"

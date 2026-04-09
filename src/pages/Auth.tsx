@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
+import CatalogPage from "@/components/CatalogPage";
 import func2url from "../../backend/func2url.json";
 
 type Mode = "login" | "register";
@@ -313,6 +314,12 @@ export default function Auth() {
 }
 
 function AdminPanel({ user, onLogout }: { user: AuthUser; onLogout: () => void }) {
+  const [page, setPage] = useState<"home" | "catalog">("home");
+
+  if (page === "catalog") {
+    return <CatalogPage onBack={() => setPage("home")} />;
+  }
+
   return (
     <div className="min-h-screen bg-background animate-fade-in">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -347,10 +354,21 @@ function AdminPanel({ user, onLogout }: { user: AuthUser; onLogout: () => void }
           </div>
           <h2 className="text-3xl font-bold text-foreground mb-2">Habari Msimamizi!</h2>
           <p className="text-muted-foreground text-base mb-8">Добро пожаловать в панель администратора</p>
-          <div className="auth-glass rounded-2xl p-6 text-left">
-            <p className="text-muted-foreground text-sm leading-relaxed">
-              Этот раздел находится в разработке. Скоро здесь появятся инструменты для управления системой.
-            </p>
+
+          <div className="grid gap-3">
+            <button
+              onClick={() => setPage("catalog")}
+              className="auth-glass rounded-2xl p-5 flex items-center gap-4 hover:border-primary/30 transition-all text-left group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                <Icon name="Package" size={22} className="text-primary" />
+              </div>
+              <div>
+                <p className="text-foreground font-semibold text-sm">Номенклатура</p>
+                <p className="text-muted-foreground text-xs mt-0.5">Каталог товаров, создание карточек</p>
+              </div>
+              <Icon name="ChevronRight" size={18} className="text-muted-foreground ml-auto" />
+            </button>
           </div>
         </div>
       </main>

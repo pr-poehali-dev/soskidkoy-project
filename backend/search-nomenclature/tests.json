@@ -1,0 +1,1 @@
+{"tests": [{"name": "OPTIONS preflight", "method": "OPTIONS", "path": "/", "expectedStatus": 200}, {"name": "Search with short query returns empty", "method": "GET", "path": "/?q=a", "expectedStatus": 200}, {"name": "Search by name", "method": "GET", "path": "/?q=test&by=name", "expectedStatus": 200}]}
