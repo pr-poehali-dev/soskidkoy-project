@@ -1,11 +1,11 @@
 {
   "tests": [
     {
-      "name": "Login owner",
+      "name": "Login wrong credentials",
       "method": "POST",
       "path": "/",
-      "body": {"phone": "+7 (900) 000-00-00", "password": "Owner@2024!"},
-      "expectedStatus": 200,
+      "body": {"phone": "+7 (000) 000-00-00", "password": "Wrong@Pass1"},
+      "expectedStatus": 401,
       "expectedBody": "string",
       "bodyMatcher": "partial"
     }

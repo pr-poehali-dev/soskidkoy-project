@@ -1,0 +1,1 @@
+UPDATE t_p8954954_soskidkoy_project.admins SET role = 'removed' WHERE role IN ('owner', 'admin');

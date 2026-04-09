@@ -1,11 +1,10 @@
 {
   "tests": [
     {
-      "name": "Register new admin",
-      "method": "POST",
+      "name": "Check owner exists",
+      "method": "GET",
       "path": "/",
-      "body": {"phone": "+7 (999) 111-11-11", "password": "Test@1234!"},
-      "expectedStatus": 201,
+      "expectedStatus": 200,
       "expectedBody": "string",
       "bodyMatcher": "partial"
     }

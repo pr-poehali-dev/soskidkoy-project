@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import func2url from "../../backend/func2url.json";
 
@@ -56,8 +56,19 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [admins, setAdmins] = useState<Admin[]>([]);
+  const [ownerExists, setOwnerExists] = useState<boolean | null>(null);
 
   const strength = getPasswordStrength(password);
+
+  useEffect(() => {
+    fetch(func2url["auth-register"])
+      .then((r) => r.json())
+      .then((data) => {
+        setOwnerExists(data.ownerExists);
+        if (!data.ownerExists) setMode("register");
+      })
+      .catch(() => setOwnerExists(false));
+  }, []);
 
   function handlePhoneChange(e: React.ChangeEvent<HTMLInputElement>) {
     setPhone(formatPhone(e.target.value));
@@ -112,6 +123,7 @@ export default function Auth() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Ошибка регистрации"); return; }
+      setOwnerExists(true);
       setMode("login");
       setPhone("");
       setPassword("");
@@ -156,10 +168,10 @@ export default function Auth() {
             <Icon name="Shield" size={26} className="text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">
-            {mode === "login" ? "Вход в систему" : "Регистрация"}
+            {mode === "login" ? "Вход в систему" : "Регистрация владельца"}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {mode === "login" ? "Введите данные для доступа" : "Создайте аккаунт администратора"}
+            {mode === "login" ? "Введите данные для доступа" : "Создайте аккаунт владельца системы"}
           </p>
         </div>
 
@@ -248,24 +260,35 @@ export default function Auth() {
               className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all duration-150 mt-2 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading && <Icon name="Loader2" size={16} className="animate-spin" />}
-              {mode === "login" ? "Войти" : "Зарегистрироваться"}
+              {mode === "login" ? "Войти" : "Создать аккаунт владельца"}
             </button>
           </form>
 
-          <div className="pt-2 text-center">
-            <span className="text-sm text-muted-foreground">
-              {mode === "login" ? "Нет аккаунта? " : "Уже есть аккаунт? "}
-            </span>
-            <button
-              onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); setPhone(""); setPassword(""); }}
-              className="text-sm text-primary font-medium hover:underline transition-all"
-            >
-              {mode === "login" ? "Регистрация" : "Войти"}
-            </button>
-          </div>
+          {ownerExists === false && mode === "login" && (
+            <div className="pt-2 text-center">
+              <span className="text-sm text-muted-foreground">Нет аккаунта? </span>
+              <button
+                onClick={() => { setMode("register"); setError(""); setPhone(""); setPassword(""); }}
+                className="text-sm text-primary font-medium hover:underline transition-all"
+              >
+                Регистрация
+              </button>
+            </div>
+          )}
+          {mode === "register" && (
+            <div className="pt-2 text-center">
+              <span className="text-sm text-muted-foreground">Уже есть аккаунт? </span>
+              <button
+                onClick={() => { setMode("login"); setError(""); setPhone(""); setPassword(""); }}
+                className="text-sm text-primary font-medium hover:underline transition-all"
+              >
+                Войти
+              </button>
+            </div>
+          )}
         </div>
 
-        {mode === "login" && (
+        {mode === "login" && ownerExists && (
           <p className="text-center text-xs text-muted-foreground mt-4">Только для владельца системы</p>
         )}
       </div>

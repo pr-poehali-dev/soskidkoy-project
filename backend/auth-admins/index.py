@@ -42,7 +42,7 @@ def handler(event: dict, context) -> dict:
         cur.close(); conn.close()
         return {'statusCode': 200, 'headers': CORS_HEADERS, 'body': json.dumps({'success': True})}
 
-    cur.execute(f"SELECT id, phone, role, created_at FROM {schema}.admins ORDER BY role DESC, created_at ASC")
+    cur.execute(f"SELECT id, phone, role, created_at FROM {schema}.admins WHERE is_active = true ORDER BY role DESC, created_at ASC")
     rows = cur.fetchall()
     cur.close(); conn.close()
 

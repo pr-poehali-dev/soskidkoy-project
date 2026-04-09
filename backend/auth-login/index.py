@@ -35,12 +35,7 @@ def handler(event: dict, context) -> dict:
     cur = conn.cursor()
     pwd_hash = hash_password(password)
 
-    cur.execute(f"SELECT id FROM {schema}.admins WHERE phone = %s AND role = 'owner' AND password_hash = 'OWNER_PLACEHOLDER'", (phone,))
-    if cur.fetchone():
-        cur.execute(f"UPDATE {schema}.admins SET password_hash = %s WHERE phone = %s AND password_hash = 'OWNER_PLACEHOLDER'", (pwd_hash, phone))
-        conn.commit()
-
-    cur.execute(f"SELECT id, phone, role, created_at FROM {schema}.admins WHERE phone = %s AND password_hash = %s", (phone, pwd_hash))
+    cur.execute(f"SELECT id, phone, role, created_at FROM {schema}.admins WHERE phone = %s AND password_hash = %s AND is_active = true", (phone, pwd_hash))
     row = cur.fetchone()
     cur.close(); conn.close()
 

@@ -1,0 +1,2 @@
+ALTER TABLE t_p8954954_soskidkoy_project.admins DROP CONSTRAINT IF EXISTS admins_role_check;
+ALTER TABLE t_p8954954_soskidkoy_project.admins ADD CONSTRAINT admins_role_check CHECK (role IN ('owner', 'admin', 'removed'));

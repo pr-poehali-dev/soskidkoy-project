@@ -1,0 +1,1 @@
+ALTER TABLE t_p8954954_soskidkoy_project.admins ADD COLUMN is_active BOOLEAN DEFAULT true;
