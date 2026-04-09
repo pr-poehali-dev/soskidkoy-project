@@ -1,4 +1,6 @@
 {
+  "push-send": "https://functions.poehali.dev/dc3f9ca4-1c22-43be-a248-d9d4dd42b0f6",
+  "push-subscribe": "https://functions.poehali.dev/d581bc97-3660-4943-a216-be9acaee9a17",
   "product-movement": "https://functions.poehali.dev/152eada1-db5b-480a-90f8-109bb2851d11",
   "get-nomenclature-products": "https://functions.poehali.dev/686c7894-ed60-4682-9721-d22ebc47d6e4",
   "get-nomenclature": "https://functions.poehali.dev/5b75d339-25ea-4b70-8b70-545f252ffbf7",

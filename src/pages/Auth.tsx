@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import Icon from "@/components/ui/icon";
 import CatalogPage from "@/components/CatalogPage";
 import func2url from "../../backend/func2url.json";
+import { subscribeToPush } from "@/lib/push";
 
 type Mode = "login" | "register";
 
@@ -59,7 +60,10 @@ export default function Auth() {
     const saved = localStorage.getItem("admin_session");
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (parsed.role === "admin") return parsed;
+      if (parsed.role === "admin") {
+        subscribeToPush(parsed.id);
+        return parsed;
+      }
     }
     return null;
   });
@@ -132,6 +136,7 @@ export default function Auth() {
         localStorage.setItem("admin_session", JSON.stringify(data));
       }
       await loadAdmins(data.role);
+      subscribeToPush(data.id);
     } catch {
       setError("Ошибка соединения с сервером");
     } finally {
@@ -437,6 +442,12 @@ function Dashboard({
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
 
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushSending, setPushSending] = useState(false);
+  const [pushResult, setPushResult] = useState("");
+  const [pushError, setPushError] = useState("");
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const digits = newPhone.replace(/\D/g, "");
@@ -599,6 +610,74 @@ function Dashboard({
             <p>Нажмите «Добавить» чтобы создать первого администратора</p>
           </div>
         )}
+
+        <div className="mt-8">
+          <h2 className="text-lg font-bold text-foreground mb-4">Пуш-уведомления</h2>
+          <div className="auth-glass rounded-2xl p-5 space-y-3">
+            <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2">
+                <Icon name="Type" size={16} className="text-muted-foreground" />
+              </span>
+              <input
+                type="text"
+                value={pushTitle}
+                onChange={(e) => { setPushTitle(e.target.value); setPushError(""); setPushResult(""); }}
+                placeholder="Заголовок"
+                className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm"
+              />
+            </div>
+            <div className="relative input-focus rounded-xl border border-border bg-input overflow-hidden">
+              <span className="absolute left-3 top-3">
+                <Icon name="MessageSquare" size={16} className="text-muted-foreground" />
+              </span>
+              <textarea
+                value={pushMessage}
+                onChange={(e) => { setPushMessage(e.target.value); setPushError(""); setPushResult(""); }}
+                placeholder="Текст уведомления"
+                rows={3}
+                className="w-full pl-9 pr-4 py-3 bg-transparent text-foreground placeholder:text-muted-foreground/50 outline-none text-sm resize-none"
+              />
+            </div>
+            {pushError && (
+              <div className="flex items-center gap-2 text-destructive text-sm bg-destructive/10 rounded-xl px-3 py-2.5 border border-destructive/20">
+                <Icon name="AlertCircle" size={14} />
+                {pushError}
+              </div>
+            )}
+            {pushResult && (
+              <div className="flex items-center gap-2 text-emerald-400 text-sm bg-emerald-500/10 rounded-xl px-3 py-2.5 border border-emerald-500/20">
+                <Icon name="Check" size={14} />
+                {pushResult}
+              </div>
+            )}
+            <button
+              type="button"
+              disabled={pushSending}
+              onClick={async () => {
+                if (!pushTitle.trim() || !pushMessage.trim()) { setPushError("Заполните заголовок и текст"); return; }
+                setPushSending(true);
+                setPushError("");
+                setPushResult("");
+                try {
+                  const res = await fetch(func2url["push-send"], {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "X-User-Role": "owner" },
+                    body: JSON.stringify({ title: pushTitle.trim(), message: pushMessage.trim() }),
+                  });
+                  const data = await res.json();
+                  if (!res.ok) { setPushError(data.error || "Ошибка отправки"); return; }
+                  setPushResult(`Отправлено: ${data.sent}, ошибок: ${data.failed}`);
+                  setPushTitle("");
+                  setPushMessage("");
+                } catch { setPushError("Ошибка сети"); } finally { setPushSending(false); }
+              }}
+              className="w-full py-3 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {pushSending ? <Icon name="Loader2" size={16} className="animate-spin" /> : <Icon name="Bell" size={16} />}
+              Отправить уведомление
+            </button>
+          </div>
+        </div>
       </main>
     </div>
   );

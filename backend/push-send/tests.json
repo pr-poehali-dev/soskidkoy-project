@@ -1,0 +1,35 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "POST without owner role",
+      "method": "POST",
+      "path": "/",
+      "body": {"title": "test", "message": "test"},
+      "expectedStatus": 403
+    },
+    {
+      "name": "POST missing fields",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-User-Role": "owner"},
+      "body": {},
+      "expectedStatus": 400
+    },
+    {
+      "name": "POST send notification",
+      "method": "POST",
+      "path": "/",
+      "headers": {"X-User-Role": "owner"},
+      "body": {"title": "Тест", "message": "Тестовое уведомление"},
+      "expectedStatus": 200,
+      "expectedBody": {"success": true},
+      "bodyMatcher": "partial"
+    }
+  ]
+}

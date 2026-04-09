@@ -1,4 +1,4 @@
-const CACHE_NAME = 'admin-panel-v1';
+const CACHE_NAME = 'admin-panel-v2';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json',
@@ -36,5 +36,37 @@ self.addEventListener('fetch', (event) => {
         return response;
       })
       .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
+  );
+});
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'Уведомление', body: '' };
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data.body = event.data ? event.data.text() : '';
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      vibrate: [200, 100, 200],
+      tag: 'admin-push',
+      renotify: true,
+    })
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        return clientList[0].focus();
+      }
+      return clients.openWindow('/');
+    })
   );
 });
