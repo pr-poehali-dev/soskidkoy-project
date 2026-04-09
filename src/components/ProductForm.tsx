@@ -17,9 +17,10 @@ interface NomenclatureResult {
 interface ProductFormProps {
   onSuccess: () => void;
   onCancel: () => void;
+  prefilledNomenclatureId?: number;
 }
 
-export default function ProductForm({ onSuccess, onCancel }: ProductFormProps) {
+export default function ProductForm({ onSuccess, onCancel, prefilledNomenclatureId }: ProductFormProps) {
   const [name, setName] = useState("");
   const [article, setArticle] = useState("");
   const [description, setDescription] = useState("");
@@ -51,6 +52,28 @@ export default function ProductForm({ onSuccess, onCancel }: ProductFormProps) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!prefilledNomenclatureId) return;
+    async function prefill() {
+      try {
+        const res = await fetch(`${func2url["get-nomenclature-products"]}?nomenclature_id=${prefilledNomenclatureId}`);
+        const data = await res.json();
+        const nom = data.nomenclature;
+        if (!nom) return;
+        setNomenclatureId(nom.id);
+        setName(nom.name);
+        setArticle(nom.article || "");
+        setDescription(nom.description || "");
+        setWatts(nom.watts ? String(nom.watts) : "");
+        setBasePrice(nom.base_price ? String(nom.base_price) : "");
+        setWholesalePrice(nom.wholesale_price ? String(nom.wholesale_price) : "");
+        if (nom.image_url) setImageBase64(nom.image_url);
+        setNomLocked(true);
+      } catch { /* ignore */ }
+    }
+    prefill();
+  }, [prefilledNomenclatureId]);
 
   function searchNomenclature(query: string, by: "name" | "article") {
     if (debounceRef.current) clearTimeout(debounceRef.current);
